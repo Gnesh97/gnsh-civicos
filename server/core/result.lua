@@ -1,5 +1,8 @@
 -- Standard success/error envelope for server callbacks, exports and events.
 
+local CivicOS = rawget(_G, "CivicOS") or {}
+_G.CivicOS = CivicOS
+
 local Result = {}
 
 local unsafeDetailKeys = {
@@ -58,4 +61,5 @@ function Result.isErr(result)
     return type(result) == "table" and result.ok == false and type(result.error) == "table"
 end
 
+CivicOS.Result = Result
 return Result

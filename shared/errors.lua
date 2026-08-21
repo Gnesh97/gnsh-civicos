@@ -1,5 +1,8 @@
 -- Stable, non-sensitive CivicOS error catalogue.
 
+local CivicOS = rawget(_G, "CivicOS") or {}
+_G.CivicOS = CivicOS
+
 local Errors = {
     DOMAIN_REASON = "DOMAIN_REASON",
 
@@ -40,4 +43,5 @@ local Errors = {
     },
 }
 
+CivicOS.Errors = Errors
 return Errors

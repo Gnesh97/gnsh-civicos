@@ -3,6 +3,9 @@
 -- Values in this module are public contract values. Services must import this
 -- module instead of assigning lifecycle strings directly.
 
+local CivicOS = rawget(_G, "CivicOS") or {}
+_G.CivicOS = CivicOS
+
 local Enums = {
     RequestStatus = {
         DRAFT = "draft",
@@ -129,4 +132,5 @@ local Enums = {
     },
 }
 
+CivicOS.Enums = Enums
 return Enums

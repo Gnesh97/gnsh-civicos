@@ -1,5 +1,8 @@
 -- CivicOS immutable contract constants.
 
+local CivicOS = rawget(_G, "CivicOS") or {}
+_G.CivicOS = CivicOS
+
 local Constants = {
     CIVICOS_VERSION = "0.1.0",
     CONTRACT_VERSION = 1,
@@ -34,4 +37,5 @@ local Constants = {
     },
 }
 
+CivicOS.Constants = Constants
 return Constants

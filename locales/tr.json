@@ -1,0 +1,28 @@
+{
+  "common": {
+    "unknown_error": "Beklenmeyen bir hata oluştu.",
+    "loading": "Yükleniyor...",
+    "not_available": "Mevcut değil"
+  },
+  "status": {
+    "draft": "Taslak",
+    "submitted": "Gönderildi",
+    "triaged": "Sınıflandırıldı",
+    "accepted": "Kabul edildi",
+    "in_progress": "Devam ediyor",
+    "resolved": "Çözüldü",
+    "closed": "Kapatıldı",
+    "cancelled": "İptal edildi"
+  },
+  "errors": {
+    "invalid_input": "Gönderilen veriler geçersiz.",
+    "forbidden": "Bu işlem için yetkiniz yok.",
+    "not_found": "İstenen kaynak bulunamadı.",
+    "conflict": "Kaynak değişti; yenileyip tekrar deneyin."
+  },
+  "notify": {
+    "ready": "CivicOS hazır.",
+    "saved": "Kaydedildi.",
+    "assigned": "İş emri atandı."
+  }
+}

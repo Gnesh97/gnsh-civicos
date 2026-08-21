@@ -1,0 +1,28 @@
+{
+  "common": {
+    "unknown_error": "An unexpected error occurred.",
+    "loading": "Loading...",
+    "not_available": "Not available"
+  },
+  "status": {
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "triaged": "Triaged",
+    "accepted": "Accepted",
+    "in_progress": "In progress",
+    "resolved": "Resolved",
+    "closed": "Closed",
+    "cancelled": "Cancelled"
+  },
+  "errors": {
+    "invalid_input": "The submitted data is invalid.",
+    "forbidden": "You do not have permission for this action.",
+    "not_found": "The requested resource was not found.",
+    "conflict": "The resource changed; refresh and retry."
+  },
+  "notify": {
+    "ready": "CivicOS is ready.",
+    "saved": "Saved.",
+    "assigned": "Work order assigned."
+  }
+}

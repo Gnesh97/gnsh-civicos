@@ -1,6 +1,9 @@
 -- CivicOS S00 permission catalogue.
 -- Authorization services consume keys and scopes, never role labels directly.
 
+local CivicOS = rawget(_G, "CivicOS") or {}
+_G.CivicOS = CivicOS
+
 local Permissions = {
     Version = 1,
 
@@ -200,4 +203,5 @@ local Permissions = {
     },
 }
 
+CivicOS.Permissions = Permissions
 return Permissions
