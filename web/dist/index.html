@@ -3,9 +3,100 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CivicOS</title>
+    <title>CivicOS Operations</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #10151d; color: #eef4fb; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 20% 0%, #1e3447, transparent 45%), #10151d; }
+      #root { max-width: 1180px; margin: 0 auto; padding: 28px; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+      h1, h2, p { margin: 0; }
+      h1 { letter-spacing: .02em; }
+      .muted { color: #9aabba; font-size: 13px; }
+      button { border: 0; border-radius: 8px; background: #3e9ade; color: white; padding: 10px 14px; font-weight: 700; cursor: pointer; }
+      button.secondary { background: #263645; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+      .card { border: 1px solid #2a3b4c; border-radius: 12px; background: rgba(22, 31, 42, .92); padding: 18px; box-shadow: 0 16px 40px rgba(0,0,0,.18); }
+      .stat { font-size: 28px; font-weight: 800; margin-top: 8px; }
+      .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 20px 0 12px; }
+      input, select, textarea { width: 100%; border: 1px solid #324658; border-radius: 8px; background: #17232f; color: inherit; padding: 10px; }
+      textarea { min-height: 88px; resize: vertical; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #263645; padding: 12px 8px; text-align: left; font-size: 13px; }
+      th { color: #9aabba; font-weight: 600; }
+      .pill { display: inline-flex; border-radius: 999px; background: #253b4d; color: #8fd1ff; padding: 4px 8px; font-size: 11px; font-weight: 700; }
+      .error { color: #ff9f9f; margin-top: 12px; }
+      .empty { color: #9aabba; padding: 20px 0; }
+      @media (max-width: 600px) { #root { padding: 16px; } header { align-items: flex-start; flex-direction: column; } }
+    </style>
   </head>
   <body>
-    <div id="root">CivicOS</div>
+    <main id="root">
+      <header>
+        <div><h1>CivicOS</h1><p class="muted" id="subtitle">Municipal operations</p></div>
+        <button class="secondary" id="close">Close</button>
+      </header>
+      <section class="grid" id="stats"></section>
+      <section class="card" style="margin-top:16px">
+        <div class="toolbar"><h2 style="flex:1">Requests</h2><button id="refresh">Refresh</button></div>
+        <div id="error" class="error"></div>
+        <div id="requests" class="empty">Loading…</div>
+      </section>
+      <section class="card" style="margin-top:16px">
+        <h2 style="margin-bottom:12px">New request</h2>
+        <form id="request-form">
+          <label class="muted" for="service">Service</label><select id="service" required></select>
+          <label class="muted" for="title">Title</label><input id="title" maxlength="120" required />
+          <label class="muted" for="description">Description</label><textarea id="description" maxlength="4000" required></textarea>
+          <div class="toolbar"><button type="submit">Submit request</button><span class="muted" id="form-status"></span></div>
+        </form>
+      </section>
+    </main>
+    <script>
+      const state = { bootstrap: null, requests: [] };
+      const resource = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'gnsh-civicos';
+      const mock = typeof GetParentResourceName !== 'function';
+      const nui = (operation, payload = {}) => fetch(`https://${resource}/civicos:api`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation, payload }) }).catch(() => ({ ok: false }));
+      const setError = (message = '') => { document.getElementById('error').textContent = message; };
+      const renderStats = () => {
+        const identity = state.bootstrap?.identity || { displayName: 'Citizen', role: 'CITIZEN' };
+        document.getElementById('subtitle').textContent = `${identity.displayName} · ${identity.role}${identity.departmentName ? ` · ${identity.departmentName}` : ''}`;
+        document.getElementById('stats').innerHTML = `<div class="card"><span class="muted">Role</span><div class="stat">${identity.role}</div></div><div class="card"><span class="muted">Open requests</span><div class="stat">${state.requests.filter(r => !['closed','cancelled'].includes(r.status)).length}</div></div><div class="card"><span class="muted">Services</span><div class="stat">${state.bootstrap?.catalog?.length || 0}</div></div>`;
+      };
+      const renderRequests = () => {
+        const target = document.getElementById('requests');
+        if (!state.requests.length) { target.className = 'empty'; target.textContent = 'No requests yet.'; return; }
+        target.className = '';
+        target.innerHTML = `<table><thead><tr><th>Reference</th><th>Title</th><th>Priority</th><th>Status</th></tr></thead><tbody>${state.requests.map(r => `<tr><td>${r.reference || r.id}</td><td>${r.title || ''}</td><td>${r.priority || 'normal'}</td><td><span class="pill">${r.status}</span></td></tr>`).join('')}</tbody></table>`;
+      };
+      const applyMessage = (message) => {
+        if (!message || message.type !== 'civicos:api:result' || !message.result?.ok) return;
+        if (message.operation === 'bootstrap') state.bootstrap = message.result.data;
+        if (message.operation === 'request.list') state.requests = message.result.data.items || [];
+        renderStats(); renderRequests();
+      };
+      window.addEventListener('message', (event) => applyMessage(event.data));
+      const load = async () => {
+        setError('');
+        if (mock) {
+          state.bootstrap = { identity: { displayName: 'Demo Citizen', role: 'CITIZEN' }, catalog: [{ code: 'traffic_signal_failure', label: 'Traffic signal failure' }], features: {} };
+          state.requests = [{ id: 1, reference: '311-2026-000001', title: 'Demo request', priority: 'normal', status: 'submitted' }];
+        } else { nui('bootstrap'); nui('request.list', { page: 1, pageSize: 25 }); }
+        const select = document.getElementById('service');
+        select.innerHTML = (state.bootstrap?.catalog || []).map(s => `<option value="${s.code}">${s.label || s.code}</option>`).join('');
+        renderStats(); renderRequests();
+      };
+      document.getElementById('refresh').addEventListener('click', () => { if (mock) return load(); nui('request.list', { page: 1, pageSize: 25 }); });
+      document.getElementById('close').addEventListener('click', () => fetch(`https://${resource}/civicos:close`, { method: 'POST', body: '{}' }).catch(() => undefined));
+      document.getElementById('request-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const status = document.getElementById('form-status'); status.textContent = 'Submitting…';
+        if (mock) { status.textContent = 'Saved in mock mode'; return; }
+        await nui('request.create', { serviceCode: document.getElementById('service').value, title: document.getElementById('title').value, description: document.getElementById('description').value, location: { x: 0, y: 0, z: 0 } });
+        status.textContent = 'Request submitted';
+        document.getElementById('request-form').reset();
+      });
+      load();
+    </script>
   </body>
 </html>

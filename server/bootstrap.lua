@@ -110,6 +110,7 @@ local function stageServices()
             inventoryService = CivicOS.InventoryService,
             checklistService = CivicOS.ChecklistService,
             fieldService = CivicOS.FieldService,
+            api = CivicOS.Api,
         }
         for name, definition in pairs(registrations) do
             if definition and not CivicOS.Container._definitions[name] then

@@ -1,0 +1,232 @@
+local CivicOS = rawget(_G, "CivicOS") or {}
+_G.CivicOS = CivicOS
+
+local Api = { handlers = {} }
+
+local function errorResult(code, message, details)
+    return CivicOS.Result.err(code, message, details)
+end
+
+local function tableValue(value)
+    return type(value) == "table" and value or {}
+end
+
+local function number(value, field)
+    local parsed = tonumber(value)
+    if not parsed or parsed % 1 ~= 0 or parsed < 1 then
+        return nil, errorResult("CORE_INVALID_INPUT", string.format("%s must be a positive integer.", field))
+    end
+    return parsed
+end
+
+local function requestDetail(source, id, staff)
+    local rawRequest = CivicOS.RequestRepository:findById(id)
+    if not rawRequest.ok then return rawRequest end
+    local requestEntity = rawRequest.data[1]
+    if not requestEntity then return errorResult("CORE_NOT_FOUND", "Request not found.") end
+    local authorized = CivicOS.RequestService:_authorizeRead(source, requestEntity)
+    if not authorized.ok then return authorized end
+    local comments = CivicOS.RequestCommentService:list(source, id, 1, 100)
+    if not comments.ok then return comments end
+    local activity = CivicOS.RequestRepository:listActivity(id, 1, 100)
+    if not activity.ok then return activity end
+    local safeActivity = {}
+    for _, item in ipairs(activity.data or {}) do
+        safeActivity[#safeActivity + 1] = {
+            id = item.id,
+            requestId = item.request_id,
+            activityType = item.activity_type,
+            publicData = CivicOS.Repository.decode(item.public_data),
+            createdAt = item.created_at,
+        }
+    end
+    local dto = staff and CivicOS.DTO.staffRequestDetail or CivicOS.DTO.citizenRequestDetail
+    return { ok = true, data = dto(requestEntity, comments.data, safeActivity) }
+end
+
+Api.handlers.bootstrap = function(source)
+    local identity = CivicOS.Authorization:identity(source)
+    if not identity.ok then return identity end
+    local role = CivicOS.Permissions.Roles[identity.data.role] or {}
+    local catalog = CivicOS.ServiceCatalogService:list()
+    if not catalog.ok then return catalog end
+    local visibleCatalog = {}
+    for _, entry in ipairs(catalog.data) do
+        if identity.data.role ~= "CITIZEN" or entry.citizenEnabled then visibleCatalog[#visibleCatalog + 1] = entry end
+    end
+    return { ok = true, data = {
+        version = CivicOS.Version and CivicOS.Version.version,
+        identity = {
+            persistentIdentifier = identity.data.persistentIdentifier,
+            displayName = identity.data.displayName,
+            role = identity.data.role,
+            departmentName = identity.data.departmentName,
+            departmentId = identity.data.departmentId,
+        },
+        permissions = role.permissions or {},
+        features = CivicOS.Features or {},
+        catalog = visibleCatalog,
+        providerCapabilities = CivicOS.ProviderCapabilities or {},
+    } }
+end
+
+Api.handlers["request.list"] = function(source, input)
+    input = tableValue(input)
+    local result = CivicOS.RequestService:list(source, input)
+    if not result.ok then return result end
+    return { ok = true, data = CivicOS.Serializers.paginated(result.data, input.page, input.pageSize) }
+end
+
+Api.handlers["request.get"] = function(source, input)
+    local id, failure = number(tableValue(input).id, "id")
+    if not id then return failure end
+    local identity = CivicOS.Authorization:identity(source)
+    if not identity.ok then return identity end
+    return requestDetail(source, id, identity.data.role ~= "CITIZEN")
+end
+
+Api.handlers["request.create"] = function(source, input)
+    input = tableValue(input)
+    local sourceType = input.sourceType or "citizen"
+    if sourceType ~= "citizen" then
+        local auth = CivicOS.Authorization:can(source, "system.config.manage", {})
+        if not auth.ok then return errorResult("AUTH_FORBIDDEN", "Only authorized system callers may create non-citizen requests.") end
+    end
+    return CivicOS.RequestService:create(source, input, { sourceType = sourceType, sourceResource = "civicos-nui" })
+end
+
+Api.handlers["request.patch"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.id, "id")
+    if not id then return failure end
+    return CivicOS.RequestService:patch(source, id, input.expectedVersion, input.patch)
+end
+
+Api.handlers["request.transition"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.id, "id")
+    if not id then return failure end
+    return CivicOS.RequestService:transition(source, id, input.expectedVersion, input.targetStatus, input.reason)
+end
+
+Api.handlers["request.comment.add"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.id, "id")
+    if not id then return failure end
+    return CivicOS.RequestCommentService:add(source, id, input.body, input.visibility)
+end
+
+Api.handlers["request.comment.list"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.id, "id")
+    if not id then return failure end
+    local result = CivicOS.RequestCommentService:list(source, id, input.page, input.pageSize)
+    if not result.ok then return result end
+    return { ok = true, data = CivicOS.Serializers.paginated(result.data, input.page, input.pageSize) }
+end
+
+Api.handlers["workorder.list"] = function(source, input)
+    input = tableValue(input)
+    local result = CivicOS.WorkOrderService:list(source, input)
+    if not result.ok then return result end
+    local items = {}
+    for _, item in ipairs(result.data) do items[#items + 1] = CivicOS.DTO.workOrderListItem(item) end
+    return { ok = true, data = CivicOS.Serializers.paginated(items, input.page, input.pageSize) }
+end
+
+Api.handlers["workorder.get"] = function(source, input)
+    local id, failure = number(tableValue(input).id, "id")
+    if not id then return failure end
+    return CivicOS.WorkOrderService:get(source, id)
+end
+
+Api.handlers["workorder.convert"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.requestId, "requestId")
+    if not id then return failure end
+    return CivicOS.WorkOrderService:convert(source, id, input.expectedVersion, input.serviceCode, input.overrides)
+end
+
+Api.handlers["workorder.assign"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.workorderId, "workorderId")
+    if not id then return failure end
+    local employeeId, employeeFailure = number(input.employeeId, "employeeId")
+    if not employeeId then return employeeFailure end
+    return CivicOS.DispatchService:assign(source, id, input.expectedVersion, employeeId, input.reason)
+end
+
+Api.handlers["workorder.selfAssign"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.workorderId, "workorderId")
+    if not id then return failure end
+    return CivicOS.DispatchService:selfAssign(source, id, input.expectedVersion)
+end
+
+Api.handlers["workorder.transition"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.workorderId, "workorderId")
+    if not id then return failure end
+    return CivicOS.WorkOrderService:transition(source, id, input.expectedVersion, input.targetStatus, input.reason)
+end
+
+Api.handlers["checklist.get"] = function(source, input)
+    local id, failure = number(tableValue(input).workorderId, "workorderId")
+    if not id then return failure end
+    return CivicOS.ChecklistService:get(source, id)
+end
+
+Api.handlers["checklist.update"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.workorderId, "workorderId")
+    if not id then return failure end
+    return CivicOS.ChecklistService:update(source, id, input.expectedVersion, input.key, input.value)
+end
+
+Api.handlers["field.actions"] = function(source, input)
+    local id, failure = number(tableValue(input).workorderId, "workorderId")
+    if not id then return failure end
+    return CivicOS.FieldService:actions(source, id)
+end
+
+Api.handlers["field.start"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.workorderId, "workorderId")
+    if not id then return failure end
+    return CivicOS.FieldService:startAction(source, id, input.expectedVersion, input.actionKey)
+end
+
+Api.handlers["field.complete"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.workorderId, "workorderId")
+    if not id then return failure end
+    return CivicOS.FieldService:completeAction(source, id, input.token, input.actionKey, input.expectedVersion, input.result)
+end
+
+function Api.dispatch(source, operation, input)
+    if type(operation) ~= "string" or operation == "" then return errorResult("CORE_INVALID_INPUT", "API operation is required.") end
+    local handler = Api.handlers[operation]
+    if not handler then return errorResult("API_OPERATION_NOT_FOUND", "API operation is not available.") end
+    local identity = CivicOS.Authorization:identity(source)
+    if not identity.ok then return identity end
+    local limited = CivicOS.RateLimit:allow(identity.data.persistentIdentifier, "generic_callback")
+    if not limited.ok then return limited end
+    local ok, result = pcall(handler, source, input)
+    if not ok then
+        if CivicOS.Logger then CivicOS.Logger.error("API", "Callback handler failed.", { operation = operation }) end
+        return errorResult("API_HANDLER_FAILED", "The requested operation could not be completed.")
+    end
+    return CivicOS.Serializers.safeError(result)
+end
+
+if type(RegisterNetEvent) == "function" and type(AddEventHandler) == "function" then
+    RegisterNetEvent("civicos:server:api:call", function(requestId, operation, input)
+        local result = Api.dispatch(source, operation, input)
+        if type(TriggerClientEvent) == "function" then
+            TriggerClientEvent("civicos:client:api:result", source, requestId, result)
+        end
+    end)
+end
+
+CivicOS.Api = Api
+return Api
