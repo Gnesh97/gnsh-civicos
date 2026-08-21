@@ -17,6 +17,22 @@ local function actorIdentifier(auth)
     return auth.data.identity.persistentIdentifier
 end
 
+local function crewMemberAuth(source, entity, permission)
+    if not entity.assigned_crew_id then return nil end
+    local identity = CivicOS.Authorization:identity(source)
+    if not identity.ok then return identity end
+    local employee = CivicOS.EmployeeRepository:findByIdentifier(identity.data.persistentIdentifier)
+    if not employee.ok or not employee.data[1] then return nil end
+    local membership = CivicOS.CrewRepository:findMembership(entity.assigned_crew_id, employee.data[1].id)
+    if membership.ok and membership.data[1] and membership.data[1].status == "active" then
+        local role = CivicOS.Permissions.Roles[identity.data.role]
+        if role and CivicOS.Authorization:hasRolePermission(identity.data.role, permission) then
+            return { ok = true, data = { identity = identity.data, role = identity.data.role, scope = "crew" } }
+        end
+    end
+    return nil
+end
+
 function WorkOrderService:convert(source, requestId, expectedVersion, serviceCode, overrides)
     overrides = type(overrides) == "table" and overrides or {}
     local requestResult = CivicOS.RequestRepository:findById(requestId)
@@ -138,6 +154,7 @@ function WorkOrderService:get(source, id)
         assignedIdentifier = assignedIdentifier,
         departmentId = entity.department_id,
     })
+    if not auth.ok then auth = crewMemberAuth(source, entity, "workorder.read.assigned") or auth end
     if not auth.ok then auth = CivicOS.Authorization:can(source, "workorder.read.department", { departmentId = entity.department_id }) end
     if not auth.ok then return auth end
     return { ok = true, data = CivicOS.WorkOrderDomain.public(entity) }
@@ -150,6 +167,17 @@ function WorkOrderService:list(source, filters)
     if identity.data.role == "TECHNICIAN" then
         local employee = CivicOS.EmployeeRepository:findByIdentifier(identity.data.persistentIdentifier)
         if employee.ok and employee.data[1] then filters.employeeId = employee.data[1].id end
+        if employee.ok and employee.data[1] and CivicOS.CrewRepository then
+            local crews = CivicOS.CrewRepository:list(employee.data[1].department_id, "active")
+            if crews.ok then
+                local memberships = {}
+                for _, item in ipairs(crews.data) do
+                    local membership = CivicOS.CrewRepository:findMembership(item.id, employee.data[1].id)
+                    if membership.ok and membership.data[1] and membership.data[1].status == "active" then memberships[#memberships + 1] = item.id end
+                end
+                filters.crewIds = memberships
+            end
+        end
     elseif identity.data.departmentId and not filters.departmentId then
         filters.departmentId = identity.data.departmentId
     end
@@ -171,6 +199,7 @@ function WorkOrderService:transition(source, id, expectedVersion, targetStatus, 
         assignedIdentifier = assignedIdentifier,
         departmentId = entity.department_id,
     })
+    if not auth.ok then auth = crewMemberAuth(source, entity, "workorder.update.assigned") or auth end
     if not auth.ok then auth = CivicOS.Authorization:can(source, "workorder.read.department", { departmentId = entity.department_id }) end
     if not auth.ok then return auth end
     if tonumber(expectedVersion) ~= tonumber(entity.version) then return errorResult("CORE_VERSION_CONFLICT", "Work order version conflict.") end

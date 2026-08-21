@@ -25,9 +25,26 @@ function WorkOrderRepository:list(filters)
         clauses[#clauses + 1] = "department_id = ?"
         params[#params + 1] = filters.departmentId
     end
+    local assignmentClauses = {}
+    local assignmentParams = {}
     if filters.employeeId then
-        clauses[#clauses + 1] = "assigned_employee_id = ?"
-        params[#params + 1] = filters.employeeId
+        assignmentClauses[#assignmentClauses + 1] = "assigned_employee_id = ?"
+        assignmentParams[#assignmentParams + 1] = filters.employeeId
+    end
+    if filters.crewId then
+        assignmentClauses[#assignmentClauses + 1] = "assigned_crew_id = ?"
+        assignmentParams[#assignmentParams + 1] = filters.crewId
+    elseif type(filters.crewIds) == "table" and #filters.crewIds > 0 then
+        local placeholders = {}
+        for _, crewId in ipairs(filters.crewIds) do
+            placeholders[#placeholders + 1] = "?"
+            assignmentParams[#assignmentParams + 1] = crewId
+        end
+        assignmentClauses[#assignmentClauses + 1] = "assigned_crew_id IN (" .. table.concat(placeholders, ",") .. ")"
+    end
+    if #assignmentClauses > 0 then
+        clauses[#clauses + 1] = "(" .. table.concat(assignmentClauses, " OR ") .. ")"
+        for _, value in ipairs(assignmentParams) do params[#params + 1] = value end
     end
     local where = #clauses > 0 and (" WHERE " .. table.concat(clauses, " AND ")) or ""
     local page = math.max(1, tonumber(filters.page) or 1)
@@ -165,6 +182,44 @@ function WorkOrderRepository:assignAtomic(id, expectedVersion, employeeId, crewI
         return Repository.error("CORE_VERSION_CONFLICT", "Work order assignment conflict.", { id = id })
     end
     return { ok = true, data = { id = id, version = nextVersion, status = "assigned" } }
+end
+
+function WorkOrderRepository:assignCrewAtomic(id, expectedVersion, crewId, assignedBy, reason)
+    local numericVersion = tonumber(expectedVersion)
+    if not numericVersion then return Repository.error("CORE_INVALID_INPUT", "Work order version is required.") end
+    local nextVersion = numericVersion + 1
+    local statements = {
+        {
+            query = [[UPDATE civicos_workorders
+                SET assigned_employee_id = NULL, assigned_crew_id = ?, status = 'assigned', version = version + 1
+                WHERE id = ? AND version = ? AND status IN ('unassigned', 'assigned', 'declined', 'reassigned')]],
+            values = { crewId, id, numericVersion },
+        },
+        {
+            query = [[UPDATE civicos_workorder_assignments
+                SET status = 'released', released_at = CURRENT_TIMESTAMP(3)
+                WHERE workorder_id = ? AND status = 'active'
+                  AND EXISTS (SELECT 1 FROM civicos_workorders
+                    WHERE id = ? AND version = ? AND assigned_crew_id = ? AND status = 'assigned')]],
+            values = { id, id, nextVersion, crewId },
+        },
+        {
+            query = [[INSERT INTO civicos_workorder_assignments
+                (workorder_id, employee_id, crew_id, status, assigned_by_identifier, reason)
+                SELECT ?, NULL, ?, 'active', ?, ? FROM civicos_workorders
+                WHERE id = ? AND version = ? AND assigned_crew_id = ? AND status = 'assigned']],
+            values = { id, crewId, assignedBy, reason, id, nextVersion, crewId },
+        },
+    }
+    local transaction = Repository.db():transaction(statements)
+    if not transaction.ok then return transaction end
+    local current = self:findById(id)
+    if not current.ok then return current end
+    local entity = current.data[1]
+    if not entity or tonumber(entity.version) ~= nextVersion or tonumber(entity.assigned_crew_id) ~= tonumber(crewId) then
+        return Repository.error("CORE_VERSION_CONFLICT", "Work order crew assignment conflict.", { id = id })
+    end
+    return { ok = true, data = { id = id, version = nextVersion, status = "assigned", crewId = crewId } }
 end
 
 CivicOS.WorkOrderRepository = WorkOrderRepository

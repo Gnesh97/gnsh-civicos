@@ -75,6 +75,9 @@ server_scripts {
     "server/services/inspection_service.lua",
     "server/services/audit_service.lua",
     "server/services/activity_service.lua",
+    "server/services/contribution_service.lua",
+    "server/services/incident_service.lua",
+    "server/services/crew_service.lua",
     "server/api/dto.lua",
     "server/api/serializers.lua",
     "server/api/callbacks.lua",
@@ -91,6 +94,8 @@ server_scripts {
     "server/repositories/sla_repository.lua",
     "server/repositories/evidence_repository.lua",
     "server/repositories/inspection_repository.lua",
+    "server/repositories/crew_repository.lua",
+    "server/repositories/contribution_repository.lua",
     "server/jobs/sla_worker.lua",
     "server/bootstrap.lua",
 }

@@ -364,6 +364,97 @@ Api.handlers["audit.list"] = function(source, input)
     return { ok = true, data = CivicOS.Serializers.paginated(result.data, input.page, input.pageSize) }
 end
 
+Api.handlers["crew.list"] = function(source, input)
+    local result = CivicOS.CrewService:list(source, tableValue(input).departmentId)
+    if not result.ok then return result end
+    local crews = {}
+    for _, crew in ipairs(result.data) do
+        crews[#crews + 1] = {
+            id = crew.id,
+            reference = crew.reference,
+            name = crew.name,
+            departmentId = crew.department_id,
+            status = crew.status,
+            leaderEmployeeId = crew.leader_employee_id,
+            createdAt = crew.created_at,
+        }
+    end
+    return { ok = true, data = crews }
+end
+
+Api.handlers["crew.members"] = function(source, input)
+    local id, failure = number(tableValue(input).crewId, "crewId")
+    if not id then return failure end
+    return CivicOS.CrewService:members(source, id)
+end
+
+Api.handlers["crew.create"] = function(source, input)
+    input = tableValue(input)
+    return CivicOS.CrewService:create(source, input.name, input.departmentId, input.metadata)
+end
+
+Api.handlers["crew.join"] = function(source, input)
+    local id, failure = number(tableValue(input).crewId, "crewId")
+    if not id then return failure end
+    return CivicOS.CrewService:join(source, id)
+end
+
+Api.handlers["crew.leave"] = function(source, input)
+    local id, failure = number(tableValue(input).crewId, "crewId")
+    if not id then return failure end
+    return CivicOS.CrewService:leave(source, id)
+end
+
+Api.handlers["crew.transfer"] = function(source, input)
+    input = tableValue(input)
+    local crewId, crewFailure = number(input.crewId, "crewId")
+    if not crewId then return crewFailure end
+    local employeeId, employeeFailure = number(input.employeeId, "employeeId")
+    if not employeeId then return employeeFailure end
+    return CivicOS.CrewService:transfer(source, crewId, employeeId)
+end
+
+Api.handlers["crew.disband"] = function(source, input)
+    local id, failure = number(tableValue(input).crewId, "crewId")
+    if not id then return failure end
+    return CivicOS.CrewService:disband(source, id)
+end
+
+Api.handlers["crew.assign"] = function(source, input)
+    input = tableValue(input)
+    local workorderId, workorderFailure = number(input.workorderId, "workorderId")
+    if not workorderId then return workorderFailure end
+    local crewId, crewFailure = number(input.crewId, "crewId")
+    if not crewId then return crewFailure end
+    return CivicOS.CrewService:assignWorkorder(source, workorderId, input.expectedVersion, crewId, input.reason)
+end
+
+Api.handlers["contribution.list"] = function(source, input)
+    local id, failure = number(tableValue(input).workorderId, "workorderId")
+    if not id then return failure end
+    local result = CivicOS.ContributionService:list(source, id)
+    if not result.ok then return result end
+    local items = {}
+    for _, item in ipairs(result.data) do
+        items[#items + 1] = {
+            id = item.id,
+            employeeId = item.employee_id,
+            type = item.contribution_type,
+            actionKey = item.action_key,
+            durationSeconds = item.duration_seconds,
+            metadata = item.metadata,
+            createdAt = item.created_at,
+        }
+    end
+    return { ok = true, data = items }
+end
+
+Api.handlers["incident.get"] = function(source, input)
+    local id, failure = number(tableValue(input).requestId, "requestId")
+    if not id then return failure end
+    return CivicOS.IncidentService:get(source, id)
+end
+
 function Api.dispatch(source, operation, input)
     if type(operation) ~= "string" or operation == "" then return errorResult("CORE_INVALID_INPUT", "API operation is required.") end
     local handler = Api.handlers[operation]

@@ -123,6 +123,8 @@ local function stageServices()
             inspectionService = CivicOS.InspectionService,
             auditService = CivicOS.AuditService,
             activityService = CivicOS.ActivityService,
+            contributionService = CivicOS.ContributionService,
+            incidentService = CivicOS.IncidentService,
         }
         for name, definition in pairs(registrations) do
             if definition and not CivicOS.Container._definitions[name] then
@@ -131,6 +133,9 @@ local function stageServices()
         end
         if CivicOS.EmployeeService and CivicOS.EmployeeService.start then
             CivicOS.EmployeeService:start()
+        end
+        if CivicOS.CrewService and CivicOS.CrewService.start then
+            CivicOS.CrewService:start()
         end
         log("debug", "CORE", "Service container staged.")
     end

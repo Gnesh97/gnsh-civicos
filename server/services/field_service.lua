@@ -154,6 +154,7 @@ function FieldService:completeAction(source, id, token, key, expectedVersion, re
         end
         return updated
     end
+    if CivicOS.ContributionService then CivicOS.ContributionService:recordAction(source, id, key) end
     return { ok = true, data = { id = id, action = key, status = "completed", version = updated.data.version } }
 end
 

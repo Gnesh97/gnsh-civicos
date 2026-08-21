@@ -124,6 +124,7 @@ function ChecklistService:update(source, id, expectedVersion, key, value)
     if entity.request_id and CivicOS.RequestRepository and CivicOS.RequestRepository.addActivity then
         CivicOS.RequestRepository:addActivity(entity.request_id, guard.data.identity.persistentIdentifier, "checklist_updated", { key = key })
     end
+    if CivicOS.ContributionService then CivicOS.ContributionService:recordChecklist(source, id, key) end
     return { ok = true, data = { id = id, key = key, value = value, version = updated.data.version } }
 end
 

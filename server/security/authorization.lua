@@ -69,13 +69,17 @@ function Authorization:can(source, permission, resource)
     if scope == "global" then
         return { ok = true, data = { identity = identity, role = role, scope = scope } }
     end
-    if scope == "own" and resource.ownerIdentifier and resource.ownerIdentifier ~= identity.persistentIdentifier then
-        logDenied(source, permission, "owner_scope")
-        return errorResult("AUTH_FORBIDDEN", "Resource is outside own scope.")
+    if scope == "own" then
+        if not resource.ownerIdentifier or resource.ownerIdentifier ~= identity.persistentIdentifier then
+            logDenied(source, permission, "owner_scope")
+            return errorResult("AUTH_FORBIDDEN", "Resource is outside own scope.")
+        end
     end
-    if scope == "assigned" and resource.assignedIdentifier and resource.assignedIdentifier ~= identity.persistentIdentifier then
-        logDenied(source, permission, "assignment_scope")
-        return errorResult("AUTH_FORBIDDEN", "Resource is outside assignment scope.")
+    if scope == "assigned" then
+        if not resource.assignedIdentifier or resource.assignedIdentifier ~= identity.persistentIdentifier then
+            logDenied(source, permission, "assignment_scope")
+            return errorResult("AUTH_FORBIDDEN", "Resource is outside assignment scope.")
+        end
     end
     if scope == "department" then
         local sameDepartment = true
