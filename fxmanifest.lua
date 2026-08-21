@@ -18,6 +18,7 @@ shared_scripts {
     "config/adapters.lua",
     "config/permissions.lua",
     "config/departments.lua",
+    "config/service_catalog.lua",
 }
 
 server_scripts {
@@ -41,12 +42,19 @@ server_scripts {
     "server/adapters/provider_registry.lua",
     "server/security/validation.lua",
     "server/security/authorization.lua",
+    "server/security/rate_limit.lua",
     "server/container.lua",
     "server/core/migrations.lua",
     "server/core/cache.lua",
     "server/core/identity.lua",
     "server/services/department_service.lua",
     "server/services/employee_service.lua",
+    "server/domain/service_catalog.lua",
+    "server/domain/request.lua",
+    "server/state/request_state_machine.lua",
+    "server/services/service_catalog_service.lua",
+    "server/services/request_service.lua",
+    "server/services/request_comment_service.lua",
     "server/repositories/_base.lua",
     "server/repositories/request_repository.lua",
     "server/repositories/workorder_repository.lua",

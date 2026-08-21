@@ -28,6 +28,12 @@ local Config = {
         RejectAmbiguousFramework = true,
     },
 
+    RateLimits = {
+        request_create = { windowSeconds = 60, maxRequests = 5 },
+        request_comment = { windowSeconds = 60, maxRequests = 10 },
+        generic_callback = { windowSeconds = 10, maxRequests = 30 },
+    },
+
     Cache = {
         Enabled = true,
         ActiveStateTtlSeconds = 30,

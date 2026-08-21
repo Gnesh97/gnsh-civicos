@@ -30,6 +30,10 @@ function RequestRepository:list(filters)
         clauses[#clauses + 1] = "department_id = ?"
         params[#params + 1] = filters.departmentId
     end
+    if filters.requesterIdentifier then
+        clauses[#clauses + 1] = "requester_identifier = ?"
+        params[#params + 1] = filters.requesterIdentifier
+    end
     local where = #clauses > 0 and (" WHERE " .. table.concat(clauses, " AND ")) or ""
     local page = math.max(1, tonumber(filters.page) or 1)
     local pageSize = math.min(tonumber(filters.pageSize) or 50, 100)
@@ -74,11 +78,59 @@ function RequestRepository:updateStatus(id, expectedVersion, status)
     return { ok = true, data = { id = id, version = expectedVersion + 1, status = status } }
 end
 
+function RequestRepository:updateEditable(id, expectedVersion, title, description)
+    local result = Repository.db():update(
+        "UPDATE civicos_requests SET title = ?, description = ?, version = version + 1 WHERE id = ? AND version = ?",
+        { title, description, id, expectedVersion }
+    )
+    if not result.ok then return result end
+    if (result.data.affectedRows or 0) == 0 then
+        return Repository.error("CORE_VERSION_CONFLICT", "Request version conflict.", { id = id })
+    end
+    return { ok = true, data = { id = id, version = expectedVersion + 1 } }
+end
+
 function RequestRepository:addComment(requestId, authorIdentifier, visibility, body)
     return Repository.db():insert(
         "INSERT INTO civicos_request_comments (request_id, author_identifier, visibility, body) VALUES (?, ?, ?, ?)",
         { requestId, authorIdentifier, visibility or "public", body }
     )
+end
+
+function RequestRepository:listComments(requestId, includeInternal, page, pageSize)
+    page = math.max(1, tonumber(page) or 1)
+    pageSize = math.min(tonumber(pageSize) or 50, 100)
+    local sql = "SELECT id, request_id, author_identifier, visibility, body, created_at FROM civicos_request_comments WHERE request_id = ?"
+    local params = { requestId }
+    if not includeInternal then
+        sql = sql .. " AND visibility = 'public'"
+    end
+    params[#params + 1] = pageSize
+    params[#params + 1] = (page - 1) * pageSize
+    return Repository.db():query(sql .. " ORDER BY created_at ASC LIMIT ? OFFSET ?", params)
+end
+
+function RequestRepository:addActivity(requestId, actorIdentifier, activityType, publicData)
+    return Repository.db():insert(
+        "INSERT INTO civicos_request_activity (request_id, actor_identifier, activity_type, public_data) VALUES (?, ?, ?, ?)",
+        { requestId, actorIdentifier, activityType, Repository.encode(publicData) }
+    )
+end
+
+function RequestRepository:listActivity(requestId, page, pageSize)
+    page = math.max(1, tonumber(page) or 1)
+    pageSize = math.min(tonumber(pageSize) or 50, 100)
+    return Repository.db():query([[SELECT id, request_id, activity_type, public_data, created_at
+        FROM civicos_request_activity WHERE request_id = ? ORDER BY created_at ASC LIMIT ? OFFSET ?]], {
+        requestId, pageSize, (page - 1) * pageSize,
+    })
+end
+
+function RequestRepository:findPotentialDuplicates(category, subcategory, cutoff)
+    local result = Repository.db():query("SELECT " .. selectColumns .. " FROM civicos_requests WHERE category = ? AND subcategory <=> ? AND created_at >= ? AND status NOT IN ('closed', 'cancelled', 'duplicate') ORDER BY created_at DESC LIMIT 100", {
+        category, subcategory, cutoff,
+    })
+    return Repository.rows(result)
 end
 
 CivicOS.RequestRepository = RequestRepository

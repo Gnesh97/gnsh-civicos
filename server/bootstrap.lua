@@ -69,11 +69,20 @@ local function stageServices()
     if CivicOS.Cache and CivicOS.Config then
         CivicOS.Cache.configure(CivicOS.Config.Cache)
     end
+    if CivicOS.RateLimit and CivicOS.Config then
+        CivicOS.RateLimit:configure(CivicOS.Config.RateLimits)
+    end
     if CivicOS.Container and not CivicOS.Container.isReady() then
         if CivicOS.DepartmentService and CivicOS.DepartmentService.seed then
             local seeded = CivicOS.DepartmentService:seed()
             if not seeded.ok then
                 error(seeded.error.message)
+            end
+        end
+        if CivicOS.ServiceCatalogService and CivicOS.ServiceCatalogService.start then
+            local catalog = CivicOS.ServiceCatalogService:start()
+            if not catalog.ok then
+                error(catalog.error.message)
             end
         end
         local registrations = {
@@ -85,6 +94,9 @@ local function stageServices()
             departmentService = CivicOS.DepartmentService,
             employeeService = CivicOS.EmployeeService,
             authorization = CivicOS.Authorization,
+            serviceCatalog = CivicOS.ServiceCatalogService,
+            requestService = CivicOS.RequestService,
+            requestCommentService = CivicOS.RequestCommentService,
         }
         for name, definition in pairs(registrations) do
             if definition and not CivicOS.Container._definitions[name] then
