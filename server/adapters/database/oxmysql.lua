@@ -24,7 +24,11 @@ local function invoke(method, sql, params)
     if type(MySQL) == "table" and type(MySQL[method]) == "table" and type(MySQL[method].await) == "function" then
         ok, result = pcall(MySQL[method].await, sql, params or {})
     elseif type(exports) == "table" and exports.oxmysql and type(exports.oxmysql[method]) == "function" then
-        ok, result = pcall(exports.oxmysql[method], sql, params or {})
+        -- CFX export proxies expect the provider object as their first argument.
+        -- Omitting it shifts the parameter table into the query slot, which
+        -- makes oxmysql reject the call with "query must be a string".
+        local provider = exports.oxmysql
+        ok, result = pcall(provider[method], provider, sql, params or {})
     else
         return nil, "oxmysql provider is not available"
     end
@@ -94,7 +98,8 @@ function Database:transaction(statements)
         return { ok = true, data = result }
     end
     if type(exports) == "table" and exports.oxmysql and type(exports.oxmysql.transaction) == "function" then
-        local ok, result = pcall(exports.oxmysql.transaction, statements)
+        local provider = exports.oxmysql
+        local ok, result = pcall(provider.transaction, provider, statements)
         if not ok then
             return Interface.normalizeError(result, "transaction")
         end

@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### oxmysql export fallback fix
+
+- Fixed the database adapter's CFX export invocation to pass the oxmysql
+  provider object, preventing scheduler parameters such as `50` and `100` from
+  being interpreted as SQL queries.
+- Added a Lua regression test covering query and transaction export calls.
+- Added the regression test to the manual GitHub Actions quality workflow.
+
 ### Documentation correction
 
 - Updated the README implementation-status line to include completed S15/S16

@@ -46,6 +46,9 @@ jobs:
       - name: Unit tests
         run: node --test tests/unit/*.mjs
 
+      - name: Single-player Lua adapter regression
+        run: lua5.4 tests/unit/test_oxmysql_adapter.lua
+
       - name: Build release smoke artifact
         run: python scripts/build_release.py --output build/ci-release
 
