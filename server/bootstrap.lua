@@ -85,6 +85,12 @@ local function stageServices()
                 error(catalog.error.message)
             end
         end
+        if CivicOS.WorkOrderTemplateService and CivicOS.WorkOrderTemplateService.start then
+            local templates = CivicOS.WorkOrderTemplateService:start()
+            if not templates.ok then
+                error(templates.error.message)
+            end
+        end
         local registrations = {
             requestRepository = CivicOS.RequestRepository,
             workOrderRepository = CivicOS.WorkOrderRepository,
@@ -97,6 +103,10 @@ local function stageServices()
             serviceCatalog = CivicOS.ServiceCatalogService,
             requestService = CivicOS.RequestService,
             requestCommentService = CivicOS.RequestCommentService,
+            workOrderTemplateService = CivicOS.WorkOrderTemplateService,
+            workOrderService = CivicOS.WorkOrderService,
+            dispatchService = CivicOS.DispatchService,
+            workOrderDependencyService = CivicOS.WorkOrderDependencyService,
         }
         for name, definition in pairs(registrations) do
             if definition and not CivicOS.Container._definitions[name] then

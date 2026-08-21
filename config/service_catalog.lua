@@ -27,7 +27,7 @@ local Catalog = {
         sla = { acknowledge = 900, dispatch = 1800, arrival = 3600, resolution = 86400 },
         duplicate = { radius = 50.0, windowSeconds = 1800 },
         requiredCertifications = {},
-        workOrderTemplate = "road_repair",
+        workOrderTemplate = "pothole_repair",
         citizenEnabled = true,
         integrationEnabled = true,
         inspectionRequired = false,

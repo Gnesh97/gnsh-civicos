@@ -11,6 +11,13 @@ function EmployeeRepository:findByIdentifier(identifier)
         FROM civicos_employees WHERE persistent_identifier = ? LIMIT 1]], { identifier }))
 end
 
+function EmployeeRepository:findById(id)
+    return Repository.rows(Repository.db():query([[SELECT id, persistent_identifier, character_id,
+        display_name, framework, department_id, job_name, job_grade, job_grade_name,
+        duty_status, availability_status, metadata, created_at, updated_at
+        FROM civicos_employees WHERE id = ? LIMIT 1]], { id }))
+end
+
 function EmployeeRepository:listOnDuty(departmentId)
     local sql = [[SELECT id, persistent_identifier, character_id, display_name, framework,
         department_id, job_name, job_grade, job_grade_name, duty_status,
