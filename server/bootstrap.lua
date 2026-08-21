@@ -70,17 +70,29 @@ local function stageServices()
         CivicOS.Cache.configure(CivicOS.Config.Cache)
     end
     if CivicOS.Container and not CivicOS.Container.isReady() then
+        if CivicOS.DepartmentService and CivicOS.DepartmentService.seed then
+            local seeded = CivicOS.DepartmentService:seed()
+            if not seeded.ok then
+                error(seeded.error.message)
+            end
+        end
         local registrations = {
             requestRepository = CivicOS.RequestRepository,
             workOrderRepository = CivicOS.WorkOrderRepository,
             employeeRepository = CivicOS.EmployeeRepository,
             departmentRepository = CivicOS.DepartmentRepository,
             auditRepository = CivicOS.AuditRepository,
+            departmentService = CivicOS.DepartmentService,
+            employeeService = CivicOS.EmployeeService,
+            authorization = CivicOS.Authorization,
         }
         for name, definition in pairs(registrations) do
             if definition and not CivicOS.Container._definitions[name] then
                 CivicOS.Container.register(name, definition)
             end
+        end
+        if CivicOS.EmployeeService and CivicOS.EmployeeService.start then
+            CivicOS.EmployeeService:start()
         end
         log("debug", "CORE", "Service container staged.")
     end

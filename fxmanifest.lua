@@ -17,6 +17,7 @@ shared_scripts {
     "config/features.lua",
     "config/adapters.lua",
     "config/permissions.lua",
+    "config/departments.lua",
 }
 
 server_scripts {
@@ -39,10 +40,13 @@ server_scripts {
     "server/adapters/notify/standalone.lua",
     "server/adapters/provider_registry.lua",
     "server/security/validation.lua",
+    "server/security/authorization.lua",
     "server/container.lua",
     "server/core/migrations.lua",
     "server/core/cache.lua",
     "server/core/identity.lua",
+    "server/services/department_service.lua",
+    "server/services/employee_service.lua",
     "server/repositories/_base.lua",
     "server/repositories/request_repository.lua",
     "server/repositories/workorder_repository.lua",

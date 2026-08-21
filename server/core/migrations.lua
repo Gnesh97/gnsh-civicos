@@ -5,6 +5,7 @@ local Migrations = {
     definitions = {
         { version = 1, id = "001_initial", file = "sql/001_initial.sql", checksum = "civicos-001-initial-v1" },
         { version = 2, id = "002_indexes", file = "sql/002_indexes.sql", checksum = "civicos-002-indexes-v1" },
+        { version = 3, id = "003_employee_certifications", file = "sql/003_employee_certifications.sql", checksum = "civicos-003-certifications-v1" },
     },
 }
 

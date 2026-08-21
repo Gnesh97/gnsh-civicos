@@ -201,6 +201,25 @@ local Permissions = {
             },
         },
     },
+
+    RoleMapping = {
+        citizen = "CITIZEN",
+        technician = "TECHNICIAN",
+        dispatcher = "DISPATCHER",
+        supervisor = "SUPERVISOR",
+        department_admin = "DEPARTMENT_ADMIN",
+        system_admin = "SYSTEM_ADMIN",
+    },
+
+    JobRoleMapping = {
+        dispatcher = "DISPATCHER",
+        dispatch = "DISPATCHER",
+        supervisor = "SUPERVISOR",
+        manager = "SUPERVISOR",
+        department_admin = "DEPARTMENT_ADMIN",
+        admin = "DEPARTMENT_ADMIN",
+        system_admin = "SYSTEM_ADMIN",
+    },
 }
 
 CivicOS.Permissions = Permissions

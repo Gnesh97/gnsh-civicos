@@ -42,5 +42,36 @@ function EmployeeRepository:upsert(identity)
     })
 end
 
+function EmployeeRepository:addCertification(employeeId, certificationKey, expiresAt, metadata)
+    return Repository.db():query([[INSERT INTO civicos_employee_certifications
+        (employee_id, certification_key, expires_at, metadata)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE expires_at = VALUES(expires_at), metadata = VALUES(metadata)]], {
+        employeeId, certificationKey, expiresAt, Repository.encode(metadata),
+    })
+end
+
+function EmployeeRepository:removeCertification(employeeId, certificationKey)
+    return Repository.db():update(
+        "DELETE FROM civicos_employee_certifications WHERE employee_id = ? AND certification_key = ?",
+        { employeeId, certificationKey }
+    )
+end
+
+function EmployeeRepository:listCertifications(employeeId)
+    local result = Repository.db():query([[SELECT id, employee_id, certification_key,
+        expires_at, metadata, created_at FROM civicos_employee_certifications
+        WHERE employee_id = ? ORDER BY certification_key ASC]], { employeeId })
+    if not result.ok then return result end
+    return Repository.rows(result)
+end
+
+function EmployeeRepository:updateAvailability(employeeId, status)
+    return Repository.db():update(
+        "UPDATE civicos_employees SET availability_status = ? WHERE id = ?",
+        { status, employeeId }
+    )
+end
+
 CivicOS.EmployeeRepository = EmployeeRepository
 return EmployeeRepository
