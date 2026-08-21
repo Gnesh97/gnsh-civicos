@@ -48,3 +48,6 @@ jobs:
 
       - name: Build release smoke artifact
         run: python scripts/build_release.py --output build/ci-release
+
+      - name: Verify release smoke artifact
+        run: python scripts/verify_release.py build/ci-release

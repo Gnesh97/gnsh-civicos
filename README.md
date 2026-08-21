@@ -56,6 +56,7 @@ fallback so the core can boot without optional resources.
 - Integrations: [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md)
 - Migrations: [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)
 - Troubleshooting: [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
+- Release gate: [`docs/RELEASE_GATE.md`](docs/RELEASE_GATE.md)
 
 Never commit framework credentials, webhook secrets, or provider tokens. Keep
 those values in the server's secret/environment configuration.

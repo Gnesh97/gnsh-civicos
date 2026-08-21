@@ -5,6 +5,11 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### S16 — v1.0 release gate
+
+- Added the capability/verification release gate and explicit release blockers.
+- Added release artifact integrity and forbidden-content verification.
+
 ### S15 — Release candidate tooling
 
 - Added installation, configuration, integration, migration, troubleshooting,
