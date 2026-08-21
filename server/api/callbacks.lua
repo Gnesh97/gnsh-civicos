@@ -455,6 +455,15 @@ Api.handlers["incident.get"] = function(source, input)
     return CivicOS.IncidentService:get(source, id)
 end
 
+Api.handlers["analytics.dashboard"] = function(source, input)
+    input = tableValue(input)
+    return CivicOS.AnalyticsService:dashboard(source, input.startDate, input.endDate)
+end
+
+Api.handlers["health"] = function(source)
+    return CivicOS.HealthService:check(source, false)
+end
+
 function Api.dispatch(source, operation, input)
     if type(operation) ~= "string" or operation == "" then return errorResult("CORE_INVALID_INPUT", "API operation is required.") end
     local handler = Api.handlers[operation]
