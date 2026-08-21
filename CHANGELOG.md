@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Final verification snapshot — 2026-08-22
+
+- Passed Node unit tests (5/5), NUI TypeScript typecheck/build, manifest
+  validation, EN/TR locale parity, Python script compilation, migration list
+  consistency, and release artifact integrity verification.
+- Lua syntax validation is configured in CI but was not runnable locally because
+  this Windows host has no `lua`/`luac` executable installed.
+
 ### S16 — v1.0 release gate
 
 - Added the capability/verification release gate and explicit release blockers.
