@@ -38,6 +38,13 @@ local Config = {
         Enabled = true,
         ActiveStateTtlSeconds = 30,
     },
+
+    FieldOperations = {
+        ActionTokenTtlSeconds = 30,
+        DefaultActionRadius = 4.0,
+        AllowNoInventory = true,
+        MaxActionPayloadBytes = 4096,
+    },
 }
 
 CivicOS.Config = Config

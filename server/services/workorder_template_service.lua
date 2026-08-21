@@ -9,6 +9,13 @@ function TemplateService:start()
         if type(template.department) ~= "string" or type(template.actions) ~= "table" or type(template.checklist) ~= "table" then
             return CivicOS.Result.err("WORKORDER_TEMPLATE_INVALID", "Work order template is incomplete.", { key = template.key })
         end
+        for _, action in ipairs(template.actions) do
+            if type(action) ~= "table" or type(action.key) ~= "string" or type(action.type) ~= "string"
+                or tonumber(action.radius) == nil or tonumber(action.duration) == nil
+                or type(action.items) ~= "table" then
+                return CivicOS.Result.err("WORKORDER_TEMPLATE_INVALID", "Work order action is incomplete.", { key = template.key })
+            end
+        end
         local department = CivicOS.DepartmentService:get(template.department)
         if not department.ok then return department end
     end

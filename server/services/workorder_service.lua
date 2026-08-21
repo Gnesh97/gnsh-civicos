@@ -168,6 +168,10 @@ function WorkOrderService:transition(source, id, expectedVersion, targetStatus, 
     if not auth.ok then auth = CivicOS.Authorization:can(source, "workorder.read.department", { departmentId = entity.department_id }) end
     if not auth.ok then return auth end
     if tonumber(expectedVersion) ~= tonumber(entity.version) then return errorResult("CORE_VERSION_CONFLICT", "Work order version conflict.") end
+    if targetStatus == CivicOS.Enums.WorkOrderStatus.COMPLETED and CivicOS.ChecklistService then
+        local checklist = CivicOS.ChecklistService:validateCompletion(source, entity)
+        if not checklist.ok then return checklist end
+    end
     local dependencies = CivicOS.WorkOrderDependencyService and CivicOS.WorkOrderDependencyService:hasUnresolved(id)
     if dependencies and not dependencies.ok then return dependencies end
     local template = CivicOS.WorkOrderTemplateService:get(entity.template_key)

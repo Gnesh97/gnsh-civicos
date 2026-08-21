@@ -95,6 +95,22 @@ function WorkOrderRepository:updateStatus(id, expectedVersion, status)
     return { ok = true, data = { id = id, version = expectedVersion + 1, status = status } }
 end
 
+function WorkOrderRepository:updateMetadata(id, expectedVersion, metadata)
+    local encoded = Repository.encode(metadata)
+    if not encoded then
+        return Repository.error("CORE_INVALID_INPUT", "Work order metadata could not be encoded.")
+    end
+    local result = Repository.db():update(
+        "UPDATE civicos_workorders SET metadata = ?, version = version + 1 WHERE id = ? AND version = ?",
+        { encoded, id, expectedVersion }
+    )
+    if not result.ok then return result end
+    if (result.data.affectedRows or 0) == 0 then
+        return Repository.error("CORE_VERSION_CONFLICT", "Work order metadata conflict.", { id = id })
+    end
+    return { ok = true, data = { id = id, version = tonumber(expectedVersion) + 1, metadata = metadata } }
+end
+
 function WorkOrderRepository:assign(id, expectedVersion, employeeId, crewId)
     local result = Repository.db():update(
         "UPDATE civicos_workorders SET assigned_employee_id = ?, assigned_crew_id = ?, status = 'assigned', version = version + 1 WHERE id = ? AND version = ?",
