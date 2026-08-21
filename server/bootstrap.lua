@@ -131,6 +131,8 @@ local function stageServices()
             analyticsRepository = CivicOS.AnalyticsRepository,
             analyticsService = CivicOS.AnalyticsService,
             healthService = CivicOS.HealthService,
+            recoveryService = CivicOS.RecoveryService,
+            disconnectService = CivicOS.DisconnectService,
         }
         for name, definition in pairs(registrations) do
             if definition and not CivicOS.Container._definitions[name] then
@@ -143,11 +145,20 @@ local function stageServices()
         if CivicOS.CrewService and CivicOS.CrewService.start then
             CivicOS.CrewService:start()
         end
+        if CivicOS.DisconnectService and CivicOS.DisconnectService.start then
+            CivicOS.DisconnectService:start()
+        end
         log("debug", "CORE", "Service container staged.")
     end
 end
 
 local function stageJobs()
+    if CivicOS.RecoveryService and CivicOS.RecoveryService.start then
+        local recovery = CivicOS.RecoveryService:start()
+        if recovery and recovery.ok == false then
+            error(recovery.error.message)
+        end
+    end
     if CivicOS.Scheduler and CivicOS.Scheduler.start then
         CivicOS.Scheduler:start()
     else

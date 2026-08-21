@@ -61,6 +61,19 @@ function WorkOrderRepository:listByRequest(requestId)
     return Repository.rows(Repository.db():query("SELECT " .. selectColumns .. " FROM civicos_workorders WHERE request_id = ? ORDER BY id ASC", { requestId }))
 end
 
+function WorkOrderRepository:listActive(limit)
+    local pageSize = math.min(math.max(1, tonumber(limit) or 500), 1000)
+    return Repository.rows(Repository.db():query("SELECT " .. selectColumns .. [[ FROM civicos_workorders
+        WHERE status NOT IN ('closed', 'cancelled') ORDER BY updated_at ASC LIMIT ?]], { pageSize }))
+end
+
+function WorkOrderRepository:listByEmployee(employeeId, afterId, limit)
+    local pageSize = math.min(math.max(1, tonumber(limit) or 100), 100)
+    return Repository.rows(Repository.db():query("SELECT " .. selectColumns .. [[ FROM civicos_workorders
+        WHERE assigned_employee_id = ? AND id > ? AND status NOT IN ('closed', 'cancelled')
+        ORDER BY id ASC LIMIT ?]], { employeeId, tonumber(afterId) or 0, pageSize }))
+end
+
 function WorkOrderRepository:create(dto)
     local location = Repository.encode(dto.location)
     local checklist = Repository.encode(dto.checklist)
@@ -220,6 +233,96 @@ function WorkOrderRepository:assignCrewAtomic(id, expectedVersion, crewId, assig
         return Repository.error("CORE_VERSION_CONFLICT", "Work order crew assignment conflict.", { id = id })
     end
     return { ok = true, data = { id = id, version = nextVersion, status = "assigned", crewId = crewId } }
+end
+
+function WorkOrderRepository:releaseAssignment(id, expectedVersion, reason)
+    local numericVersion = tonumber(expectedVersion)
+    if not numericVersion then return Repository.error("CORE_INVALID_INPUT", "Work order version is required.") end
+    local statements = {
+        {
+            query = [[UPDATE civicos_workorders SET assigned_employee_id = NULL,
+                status = 'unassigned', version = version + 1
+                WHERE id = ? AND version = ? AND assigned_employee_id IS NOT NULL AND assigned_crew_id IS NULL]],
+            values = { id, numericVersion },
+        },
+        {
+            query = [[UPDATE civicos_workorder_assignments SET status = 'released',
+                released_at = CURRENT_TIMESTAMP(3)
+                WHERE workorder_id = ? AND status = 'active'
+                AND EXISTS (SELECT 1 FROM civicos_workorders WHERE id = ? AND version = ? AND status = 'unassigned')]],
+            values = { id, id, numericVersion + 1 },
+        },
+    }
+    local transaction = Repository.db():transaction(statements)
+    if not transaction.ok then return transaction end
+    local current = self:findById(id)
+    if not current.ok then return current end
+    local entity = current.data[1]
+    if not entity or tonumber(entity.version) ~= numericVersion + 1 or entity.assigned_employee_id ~= nil then
+        return Repository.error("CORE_VERSION_CONFLICT", "Work order release conflict.", { id = id })
+    end
+    return { ok = true, data = { id = id, version = numericVersion + 1, status = "unassigned", reason = reason } }
+end
+
+function WorkOrderRepository:releaseCrewAssignment(id, expectedVersion, reason)
+    local numericVersion = tonumber(expectedVersion)
+    if not numericVersion then return Repository.error("CORE_INVALID_INPUT", "Work order version is required.") end
+    local statements = {
+        {
+            query = [[UPDATE civicos_workorders SET assigned_employee_id = NULL,
+                assigned_crew_id = NULL, status = 'unassigned', version = version + 1
+                WHERE id = ? AND version = ? AND assigned_crew_id IS NOT NULL AND assigned_employee_id IS NULL]],
+            values = { id, numericVersion },
+        },
+        {
+            query = [[UPDATE civicos_workorder_assignments SET status = 'released',
+                released_at = CURRENT_TIMESTAMP(3)
+                WHERE workorder_id = ? AND status = 'active'
+                AND EXISTS (SELECT 1 FROM civicos_workorders WHERE id = ? AND version = ? AND status = 'unassigned')]],
+            values = { id, id, numericVersion + 1 },
+        },
+    }
+    local transaction = Repository.db():transaction(statements)
+    if not transaction.ok then return transaction end
+    local current = self:findById(id)
+    if not current.ok then return current end
+    local entity = current.data[1]
+    if not entity or tonumber(entity.version) ~= numericVersion + 1
+        or entity.assigned_employee_id ~= nil or entity.assigned_crew_id ~= nil then
+        return Repository.error("CORE_VERSION_CONFLICT", "Work order crew release conflict.", { id = id })
+    end
+    return { ok = true, data = { id = id, version = numericVersion + 1, status = "unassigned", reason = reason } }
+end
+
+function WorkOrderRepository:normalizeUnassigned(id, expectedVersion, reason)
+    local numericVersion = tonumber(expectedVersion)
+    if not numericVersion then return Repository.error("CORE_INVALID_INPUT", "Work order version is required.") end
+    local statements = {
+        {
+            query = [[UPDATE civicos_workorders SET assigned_employee_id = NULL,
+                assigned_crew_id = NULL, status = 'unassigned', version = version + 1
+                WHERE id = ? AND version = ? AND status NOT IN ('created', 'unassigned', 'closed', 'cancelled')]],
+            values = { id, numericVersion },
+        },
+        {
+            query = [[UPDATE civicos_workorder_assignments SET status = 'released',
+                released_at = CURRENT_TIMESTAMP(3)
+                WHERE workorder_id = ? AND status = 'active'
+                AND EXISTS (SELECT 1 FROM civicos_workorders WHERE id = ? AND version = ? AND status = 'unassigned')]],
+            values = { id, id, numericVersion + 1 },
+        },
+    }
+    local transaction = Repository.db():transaction(statements)
+    if not transaction.ok then return transaction end
+    local current = self:findById(id)
+    if not current.ok then return current end
+    local entity = current.data[1]
+    if not entity or tonumber(entity.version) ~= numericVersion + 1
+        or entity.assigned_employee_id ~= nil or entity.assigned_crew_id ~= nil
+        or entity.status ~= "unassigned" then
+        return Repository.error("CORE_VERSION_CONFLICT", "Work order normalization conflict.", { id = id })
+    end
+    return { ok = true, data = { id = id, version = numericVersion + 1, status = "unassigned", reason = reason } }
 end
 
 CivicOS.WorkOrderRepository = WorkOrderRepository

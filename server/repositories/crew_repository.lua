@@ -65,5 +65,12 @@ function CrewRepository:setMemberStatus(employeeId, status)
     return Repository.db():update("UPDATE civicos_crew_members SET status = ? WHERE employee_id = ? AND status = 'active'", { status, employeeId })
 end
 
+function CrewRepository:restoreMemberStatus(employeeId)
+    return Repository.db():update(
+        "UPDATE civicos_crew_members SET status = 'active', left_at = NULL WHERE employee_id = ? AND status = 'offline'",
+        { employeeId }
+    )
+end
+
 CivicOS.CrewRepository = CrewRepository
 return CrewRepository

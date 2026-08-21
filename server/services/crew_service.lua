@@ -147,6 +147,10 @@ function CrewService:start()
     self._started = true
     CivicOS.Framework:onPlayerUnloaded(function(identityOrSource)
         local identifier = type(identityOrSource) == "table" and identityOrSource.persistentIdentifier
+        if not identifier and tonumber(identityOrSource) and CivicOS.DisconnectService then
+            local session = CivicOS.DisconnectService._sessions[tonumber(identityOrSource)]
+            identifier = session and session.persistentIdentifier
+        end
         if not identifier and tonumber(identityOrSource) and CivicOS.Identity then
             local resolved = CivicOS.Identity:resolve(tonumber(identityOrSource))
             if resolved.ok then identifier = resolved.data.persistentIdentifier end

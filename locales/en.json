@@ -23,6 +23,10 @@
   "notify": {
     "ready": "CivicOS is ready.",
     "saved": "Saved.",
-    "assigned": "Work order assigned."
+    "assigned": "Work order assigned.",
+    "reconnect": {
+      "title": "Work restored",
+      "body": "Your assigned CivicOS work orders are available again."
+    }
   }
 }

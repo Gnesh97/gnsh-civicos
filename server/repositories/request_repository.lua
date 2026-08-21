@@ -46,6 +46,12 @@ function RequestRepository:list(filters)
     return Repository.rows(result)
 end
 
+function RequestRepository:listActive(limit)
+    local pageSize = math.min(math.max(1, tonumber(limit) or 500), 1000)
+    return Repository.rows(Repository.db():query("SELECT " .. selectColumns .. [[ FROM civicos_requests
+        WHERE status NOT IN ('closed', 'cancelled') ORDER BY updated_at ASC LIMIT ?]], { pageSize }))
+end
+
 function RequestRepository:create(dto)
     local location = Repository.encode(dto.location)
     local metadata = Repository.encode(dto.metadata)

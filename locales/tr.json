@@ -23,6 +23,10 @@
   "notify": {
     "ready": "CivicOS hazır.",
     "saved": "Kaydedildi.",
-    "assigned": "İş emri atandı."
+    "assigned": "İş emri atandı.",
+    "reconnect": {
+      "title": "İşler geri yüklendi",
+      "body": "Atanmış CivicOS iş emirleriniz yeniden hazır."
+    }
   }
 }

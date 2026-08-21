@@ -66,6 +66,19 @@ local Config = {
         MaxAttempts = 10,
         BatchSize = 50,
     },
+
+    Recovery = {
+        DisconnectGraceSeconds = 300,
+        MaxRecoveryBatch = 500,
+    },
+
+    Retention = {
+        DeliveredOutboxDays = 7,
+        IdempotencyDays = 2,
+        AuditDays = 90,
+        EvidenceDays = 30,
+        IntervalMs = 3600000,
+    },
 }
 
 CivicOS.Config = Config

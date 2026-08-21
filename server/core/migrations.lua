@@ -12,6 +12,7 @@ local Migrations = {
         { version = 7, id = "007_evidence_retention", file = "sql/007_evidence_retention.sql", checksum = "civicos-007-evidence-retention-v1" },
         { version = 8, id = "008_crews_contributions", file = "sql/008_crews_contributions.sql", checksum = "civicos-008-crews-contributions-v1" },
         { version = 9, id = "009_outbox_dead_letter", file = "sql/009_outbox_dead_letter.sql", checksum = "civicos-009-outbox-dead-letter-v1" },
+        { version = 10, id = "010_retention_indexes", file = "sql/010_retention_indexes.sql", checksum = "civicos-010-retention-indexes-v1" },
     },
 }
 
