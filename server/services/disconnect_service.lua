@@ -62,7 +62,7 @@ function DisconnectService:onLoaded(identity)
     if employee.ok and employee.data[1] then
         local availability = identity.job and identity.job.onDuty and "available" or "offline"
         CivicOS.EmployeeRepository:updateAvailability(employee.data[1].id, availability)
-        if CivicOS.CrewRepository and CivicOS.CrewRepository:restoreMemberStatus then
+        if CivicOS.CrewRepository and CivicOS.CrewRepository.restoreMemberStatus then
             CivicOS.CrewRepository:restoreMemberStatus(employee.data[1].id)
         end
         local workorders = CivicOS.WorkOrderRepository:list({ employeeId = employee.data[1].id, page = 1, pageSize = 100 })

@@ -10,8 +10,9 @@ introduced must add or amend an entry.
 - Passed Node unit tests (5/5), NUI TypeScript typecheck/build, manifest
   validation, EN/TR locale parity, Python script compilation, migration list
   consistency, and release artifact integrity verification.
-- Lua syntax validation is configured in CI but was not runnable locally because
-  this Windows host has no `lua`/`luac` executable installed.
+- Lua 5.5.1 syntax validation now passes for all 115 client/config/server/shared
+  Lua files.
+- Fixed the reconnect service's method existence check found by the Lua parser.
 
 ### S16 — v1.0 release gate
 
