@@ -46,6 +46,7 @@ server_scripts {
     "server/security/action_tokens.lua",
     "server/security/exploit_guard.lua",
     "server/container.lua",
+    "server/jobs/scheduler.lua",
     "server/core/migrations.lua",
     "server/core/cache.lua",
     "server/core/identity.lua",
@@ -64,6 +65,9 @@ server_scripts {
     "server/services/inventory_service.lua",
     "server/services/checklist_service.lua",
     "server/services/field_service.lua",
+    "server/services/notification_service.lua",
+    "server/services/escalation_service.lua",
+    "server/services/sla_service.lua",
     "server/api/dto.lua",
     "server/api/serializers.lua",
     "server/api/callbacks.lua",
@@ -75,6 +79,10 @@ server_scripts {
     "server/repositories/audit_repository.lua",
     "server/repositories/assignment_repository.lua",
     "server/repositories/workorder_dependency_repository.lua",
+    "server/repositories/notification_repository.lua",
+    "server/repositories/escalation_repository.lua",
+    "server/repositories/sla_repository.lua",
+    "server/jobs/sla_worker.lua",
     "server/bootstrap.lua",
 }
 

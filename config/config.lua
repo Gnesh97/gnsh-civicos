@@ -45,6 +45,16 @@ local Config = {
         AllowNoInventory = true,
         MaxActionPayloadBytes = 4096,
     },
+
+    Scheduler = {
+        IntervalMs = 1000,
+        MaxJobsPerTick = 25,
+    },
+
+    SLA = {
+        WarningLeadSeconds = 300,
+        BatchSize = 100,
+    },
 }
 
 CivicOS.Config = Config

@@ -118,6 +118,12 @@ function WorkOrderService:syncRequestState(requestId, actorIdentifier, reason)
             reason = reason,
         })
     end
+    if CivicOS.NotificationService then
+        CivicOS.NotificationService:forRequest(entity.id, "request_status", "civicos.request.status.title", "civicos.request.status.body", {
+            status = target,
+            requestId = entity.id,
+        })
+    end
     return { ok = true, data = true }
 end
 
@@ -186,6 +192,13 @@ function WorkOrderService:transition(source, id, expectedVersion, targetStatus, 
     if not updated.ok then return updated end
     local synced = self:syncRequestState(entity.request_id, auth.data.identity.persistentIdentifier, reason)
     if not synced.ok then return synced end
+    if entity.request_id and CivicOS.SlaService then
+        if targetStatus == CivicOS.Enums.WorkOrderStatus.EN_ROUTE or targetStatus == CivicOS.Enums.WorkOrderStatus.ON_SCENE then
+            CivicOS.SlaService:markMilestone(entity.request_id, "arrival", auth.data.identity.persistentIdentifier)
+        elseif targetStatus == CivicOS.Enums.WorkOrderStatus.COMPLETED or targetStatus == CivicOS.Enums.WorkOrderStatus.CLOSED then
+            CivicOS.SlaService:markMilestone(entity.request_id, "resolution", auth.data.identity.persistentIdentifier)
+        end
+    end
     if CivicOS.AuditRepository then
         CivicOS.AuditRepository:append({ actorIdentifier = auth.data.identity.persistentIdentifier, entityType = "workorder", entityId = id, action = "transition", after = { from = entity.status, to = targetStatus, reason = reason } })
     end

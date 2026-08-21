@@ -7,6 +7,8 @@ local Migrations = {
         { version = 2, id = "002_indexes", file = "sql/002_indexes.sql", checksum = "civicos-002-indexes-v1" },
         { version = 3, id = "003_employee_certifications", file = "sql/003_employee_certifications.sql", checksum = "civicos-003-certifications-v1" },
         { version = 4, id = "004_assignment_reason", file = "sql/004_assignment_reason.sql", checksum = "civicos-004-assignment-reason-v1" },
+        { version = 5, id = "005_sla_state", file = "sql/005_sla_state.sql", checksum = "civicos-005-sla-state-v1" },
+        { version = 6, id = "006_escalations", file = "sql/006_escalations.sql", checksum = "civicos-006-escalations-v1" },
     },
 }
 

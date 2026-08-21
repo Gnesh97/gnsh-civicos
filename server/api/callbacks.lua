@@ -203,6 +203,87 @@ Api.handlers["field.complete"] = function(source, input)
     return CivicOS.FieldService:completeAction(source, id, input.token, input.actionKey, input.expectedVersion, input.result)
 end
 
+Api.handlers["notification.list"] = function(source, input)
+    input = tableValue(input)
+    local result = CivicOS.NotificationService:list(source, input.unreadOnly, input.page, input.pageSize)
+    if not result.ok then return result end
+    return { ok = true, data = CivicOS.Serializers.paginated(result.data, input.page, input.pageSize) }
+end
+
+Api.handlers["notification.read"] = function(source, input)
+    local id, failure = number(tableValue(input).id, "id")
+    if not id then return failure end
+    return CivicOS.NotificationService:markRead(source, id)
+end
+
+Api.handlers["sla.list"] = function(source, input)
+    local id, failure = number(tableValue(input).requestId, "requestId")
+    if not id then return failure end
+    local result = CivicOS.SlaService:list(source, id)
+    if not result.ok then return result end
+    local events = {}
+    for _, event in ipairs(result.data) do
+        events[#events + 1] = {
+            id = event.id,
+            milestone = event.milestone,
+            status = event.status,
+            dueAt = event.due_at,
+            warningAt = event.warning_at,
+            metAt = event.met_at,
+            breachedAt = event.breached_at,
+            pausedAt = event.paused_at,
+            accumulatedPauseSeconds = event.accumulated_pause_seconds,
+            exempt = event.exempt == 1 or event.exempt == true,
+        }
+    end
+    return { ok = true, data = events }
+end
+
+Api.handlers["sla.pause"] = function(source, input)
+    local id, failure = number(tableValue(input).id, "id")
+    if not id then return failure end
+    return CivicOS.SlaService:pause(source, id)
+end
+
+Api.handlers["sla.resume"] = function(source, input)
+    local id, failure = number(tableValue(input).id, "id")
+    if not id then return failure end
+    return CivicOS.SlaService:resume(source, id)
+end
+
+Api.handlers["sla.exempt"] = function(source, input)
+    local id, failure = number(tableValue(input).id, "id")
+    if not id then return failure end
+    return CivicOS.SlaService:exempt(source, id)
+end
+
+Api.handlers["escalation.list"] = function(source)
+    local result = CivicOS.EscalationService:list(source)
+    if not result.ok then return result end
+    local items = {}
+    for _, item in ipairs(result.data) do
+        items[#items + 1] = {
+            id = item.id,
+            entityType = item.entity_type,
+            entityId = item.entity_id,
+            severity = item.severity,
+            reason = item.reason,
+            status = item.status,
+            acknowledgedBy = item.acknowledged_by,
+            acknowledgedAt = item.acknowledged_at,
+            metadata = CivicOS.Repository.decode(item.metadata),
+            createdAt = item.created_at,
+        }
+    end
+    return { ok = true, data = items }
+end
+
+Api.handlers["escalation.acknowledge"] = function(source, input)
+    local id, failure = number(tableValue(input).id, "id")
+    if not id then return failure end
+    return CivicOS.EscalationService:acknowledge(source, id)
+end
+
 function Api.dispatch(source, operation, input)
     if type(operation) ~= "string" or operation == "" then return errorResult("CORE_INVALID_INPUT", "API operation is required.") end
     local handler = Api.handlers[operation]

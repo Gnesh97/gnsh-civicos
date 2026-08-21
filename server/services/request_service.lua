@@ -134,6 +134,12 @@ function RequestService:create(source, input, context)
         category = catalog.data.category,
     }
     auditAndActivity(entity.id, identifier, "created", { status = entity.status, category = entity.category })
+    if CivicOS.SlaService then
+        local sla = CivicOS.SlaService:createForRequest(entity.id, catalog.data)
+        if not sla.ok and CivicOS.Logger then
+            CivicOS.Logger.error("SLA", "Request SLA creation failed.", { requestId = entity.id, code = sla.error and sla.error.code })
+        end
+    end
     emit("request.created", { requestId = entity.id, actorIdentifier = identifier })
     return { ok = true, data = { id = entity.id, duplicateSuggestion = duplicate.data.duplicate and duplicate.data.request or nil } }
 end
@@ -195,6 +201,16 @@ function RequestService:transition(source, id, expectedVersion, targetStatus, re
     local updated = CivicOS.RequestRepository:updateStatus(id, expectedVersion, targetStatus)
     if not updated.ok then return updated end
     auditAndActivity(id, authorization.data.identity.persistentIdentifier, "transition", { from = entity.status, to = targetStatus, reason = reason })
+    if CivicOS.NotificationService then
+        CivicOS.NotificationService:forRequest(id, "request_status", "civicos.request.status.title", "civicos.request.status.body", {
+            status = targetStatus,
+            requestId = id,
+        })
+    end
+    local milestone = ({ triaged = "acknowledge", accepted = "acknowledge" })[targetStatus]
+    if milestone and CivicOS.SlaService then
+        CivicOS.SlaService:markMilestone(id, milestone, authorization.data.identity.persistentIdentifier)
+    end
     emit("request.status.changed", { requestId = id, from = entity.status, to = targetStatus })
     return updated
 end
