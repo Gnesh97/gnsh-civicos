@@ -22,9 +22,19 @@ shared_scripts {
 server_scripts {
     "server/core/result.lua",
     "server/core/logger.lua",
+    "server/adapters/database/interface.lua",
+    "server/adapters/database/oxmysql.lua",
     "server/adapters/logging/console.lua",
     "server/security/validation.lua",
     "server/container.lua",
+    "server/core/migrations.lua",
+    "server/core/cache.lua",
+    "server/repositories/_base.lua",
+    "server/repositories/request_repository.lua",
+    "server/repositories/workorder_repository.lua",
+    "server/repositories/employee_repository.lua",
+    "server/repositories/department_repository.lua",
+    "server/repositories/audit_repository.lua",
     "server/bootstrap.lua",
 }
 

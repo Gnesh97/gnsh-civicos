@@ -30,15 +30,18 @@ local function stageConfig()
 end
 
 local function stageDatabase()
-    -- Database adapter and migration runner are registered in S02. Keeping the
-    -- stage explicit makes startup order observable without a silent fallback.
-    if CivicOS.DatabaseAdapter and CivicOS.Config.Database.MigrationOnStart then
-        local result = CivicOS.DatabaseAdapter.health and CivicOS.DatabaseAdapter:health()
-        if result and result.ok == false then
-            error(result.error.message)
+    if not CivicOS.DatabaseAdapter then
+        error("Database adapter is not registered.")
+    end
+    local health = CivicOS.DatabaseAdapter.health and CivicOS.DatabaseAdapter:health()
+    if health and health.ok == false then
+        error(health.error.message)
+    end
+    if CivicOS.Config.Database.MigrationOnStart and CivicOS.Migrations then
+        local migration = CivicOS.Migrations.run()
+        if not migration.ok then
+            error(migration.error.message)
         end
-    else
-        log("debug", "DB", "Database stage deferred until persistence adapter is registered.")
     end
 end
 
@@ -54,8 +57,22 @@ local function stageAdapters()
 end
 
 local function stageServices()
+    if CivicOS.Cache and CivicOS.Config then
+        CivicOS.Cache.configure(CivicOS.Config.Cache)
+    end
     if CivicOS.Container and not CivicOS.Container.isReady() then
-        -- Services register before READY; no service resolution is allowed here.
+        local registrations = {
+            requestRepository = CivicOS.RequestRepository,
+            workOrderRepository = CivicOS.WorkOrderRepository,
+            employeeRepository = CivicOS.EmployeeRepository,
+            departmentRepository = CivicOS.DepartmentRepository,
+            auditRepository = CivicOS.AuditRepository,
+        }
+        for name, definition in pairs(registrations) do
+            if definition and not CivicOS.Container._definitions[name] then
+                CivicOS.Container.register(name, definition)
+            end
+        end
         log("debug", "CORE", "Service container staged.")
     end
 end

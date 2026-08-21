@@ -1,0 +1,11 @@
+CREATE INDEX idx_civicos_requests_queue ON civicos_requests (status, priority, created_at);
+CREATE INDEX idx_civicos_requests_department ON civicos_requests (department_id, status, created_at);
+CREATE INDEX idx_civicos_requests_external ON civicos_requests (source_resource, external_ref);
+CREATE INDEX idx_civicos_workorders_queue ON civicos_workorders (status, priority, created_at);
+CREATE INDEX idx_civicos_workorders_department ON civicos_workorders (department_id, status, created_at);
+CREATE INDEX idx_civicos_workorders_employee ON civicos_workorders (assigned_employee_id, status);
+CREATE INDEX idx_civicos_workorders_crew ON civicos_workorders (assigned_crew_id, status);
+CREATE INDEX idx_civicos_sla_queue ON civicos_sla_events (status, due_at);
+CREATE INDEX idx_civicos_notifications_inbox ON civicos_notifications (recipient_identifier, read_at, created_at);
+CREATE INDEX idx_civicos_audit_entity ON civicos_audit_logs (entity_type, entity_id, created_at);
+CREATE INDEX idx_civicos_outbox_delivery ON civicos_outbox (delivered_at, next_attempt_at);
