@@ -5,6 +5,16 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### S15 — Release candidate tooling
+
+- Added installation, configuration, integration, migration, troubleshooting,
+  and release-matrix documentation.
+- Added a manual GitHub Actions quality workflow for Lua syntax, NUI typecheck,
+  manifest/locale checks, unit tests, and release smoke packaging.
+- Added deterministic release packaging and integrity manifest tooling under
+  `scripts/`.
+- Added NUI TypeScript metadata and static artifact verification.
+
 ### S14 — Recovery, resilience, and performance
 
 - Added bounded restart recovery for active requests/work orders, stale

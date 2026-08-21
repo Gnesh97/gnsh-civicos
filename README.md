@@ -51,6 +51,11 @@ fallback so the core can boot without optional resources.
 - Migration history: [`sql`](sql)
 - Security and permission contracts: [`docs/spec`](docs/spec)
 - Retention and archival policy: [`docs/spec/RETENTION_POLICY.md`](docs/spec/RETENTION_POLICY.md)
+- Installation: [`docs/INSTALLATION.md`](docs/INSTALLATION.md)
+- Configuration: [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md)
+- Integrations: [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md)
+- Migrations: [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)
+- Troubleshooting: [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
 
 Never commit framework credentials, webhook secrets, or provider tokens. Keep
 those values in the server's secret/environment configuration.
@@ -62,6 +67,10 @@ commit messages (`feat:`, `fix:`, `docs:`, `test:`, `chore:`, and so on). Every
 commit must update [`CHANGELOG.md`](CHANGELOG.md) with the phase or change it
 contains. Run the final test, load, abuse, and migration matrix before merging
 `dev` into `main`.
+
+The release-candidate CI workflow is available through GitHub Actions
+`workflow_dispatch`; it is intentionally manual until the final verification
+phase so development pushes do not run the deferred test matrix early.
 
 ## License
 

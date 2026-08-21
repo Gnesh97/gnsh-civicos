@@ -1,0 +1,50 @@
+name: CivicOS CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Lua syntax checker
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y lua5.4
+
+      - name: Validate Lua syntax
+        shell: bash
+        run: |
+          find client config server shared -type f -name '*.lua' -print0 \
+            | xargs -0 -n1 luac5.4 -p
+
+      - name: Install NUI tooling
+        run: npm install --prefix web --no-package-lock --ignore-scripts
+
+      - name: Typecheck and verify NUI artifact
+        run: npm run build --prefix web
+
+      - name: Validate manifest and locales
+        run: |
+          python scripts/validate_manifest.py
+          python scripts/check_locales.py
+
+      - name: Unit tests
+        run: node --test tests/unit/*.mjs
+
+      - name: Build release smoke artifact
+        run: python scripts/build_release.py --output build/ci-release
