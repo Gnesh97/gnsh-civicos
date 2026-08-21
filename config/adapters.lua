@@ -6,6 +6,7 @@ local Adapters = {
     Inventory = "auto",
     Notify = "standalone",
     Target = "auto",
+    Evidence = "none",
     Logging = "console",
     Database = "oxmysql",
 }

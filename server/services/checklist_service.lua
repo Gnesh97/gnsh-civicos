@@ -141,6 +141,18 @@ function ChecklistService:validateCompletion(source, entity)
     return { ok = true, data = true }
 end
 
+function ChecklistService:validateValues(entity)
+    local definitions = checklistFor(entity)
+    if not definitions.ok then return definitions end
+    local values = stateFor(entity).checklist
+    local missing = {}
+    for _, item in ipairs(definitions.data) do
+        if item.required and not valueComplete(item, values[item.key]) then missing[#missing + 1] = item.key end
+    end
+    if #missing > 0 then return errorResult("CHECKLIST_INCOMPLETE", "Required checklist items are incomplete.", { missing = missing }) end
+    return { ok = true, data = true }
+end
+
 if type(RegisterNetEvent) == "function" and type(AddEventHandler) == "function" then
     RegisterNetEvent("civicos:server:checklist:update", function(workorderId, expectedVersion, key, value)
         local result = ChecklistService:update(source, workorderId, expectedVersion, key, value)

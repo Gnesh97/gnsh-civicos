@@ -181,11 +181,18 @@ function WorkOrderService:transition(source, id, expectedVersion, targetStatus, 
     local dependencies = CivicOS.WorkOrderDependencyService and CivicOS.WorkOrderDependencyService:hasUnresolved(id)
     if dependencies and not dependencies.ok then return dependencies end
     local template = CivicOS.WorkOrderTemplateService:get(entity.template_key)
+    local inspectionRequired = template.ok and template.data.inspectionRequired == true
+    local inspectionPassed = not inspectionRequired
+    if inspectionRequired and CivicOS.InspectionService then
+        local inspection = CivicOS.InspectionService:isPassed(id)
+        if not inspection.ok then return inspection end
+        inspectionPassed = inspection.data == true
+    end
     local transition = CivicOS.WorkOrderStateMachine.transition(entity, targetStatus, {
         reason = reason,
         dependenciesUnresolved = dependencies and dependencies.ok and dependencies.data or false,
-        inspectionRequired = template.ok and template.data.inspectionRequired,
-        inspectionPassed = false,
+        inspectionRequired = inspectionRequired,
+        inspectionPassed = inspectionPassed,
     })
     if not transition.ok then return transition end
     local updated = CivicOS.WorkOrderRepository:updateStatus(id, expectedVersion, targetStatus)

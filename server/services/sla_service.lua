@@ -99,7 +99,9 @@ function SlaService:pause(source, id)
     if not event.data[1] then return errorResult("CORE_NOT_FOUND", "SLA event not found.") end
     local auth = scopedAuth(source, event.data[1])
     if not auth.ok then return auth end
-    return CivicOS.SlaRepository:pause(id)
+    local result = CivicOS.SlaRepository:pause(id)
+    if result.ok and result.data.changed and CivicOS.AuditService then CivicOS.AuditService:record(source, { entityType = "sla", entityId = id, action = "pause" }) end
+    return result
 end
 
 function SlaService:resume(source, id)
@@ -108,7 +110,9 @@ function SlaService:resume(source, id)
     if not event.data[1] then return errorResult("CORE_NOT_FOUND", "SLA event not found.") end
     local auth = scopedAuth(source, event.data[1])
     if not auth.ok then return auth end
-    return CivicOS.SlaRepository:resume(id)
+    local result = CivicOS.SlaRepository:resume(id)
+    if result.ok and result.data.changed and CivicOS.AuditService then CivicOS.AuditService:record(source, { entityType = "sla", entityId = id, action = "resume" }) end
+    return result
 end
 
 function SlaService:exempt(source, id)
@@ -117,7 +121,9 @@ function SlaService:exempt(source, id)
     if not event.data[1] then return errorResult("CORE_NOT_FOUND", "SLA event not found.") end
     local auth = scopedAuth(source, event.data[1])
     if not auth.ok then return auth end
-    return CivicOS.SlaRepository:exempt(id)
+    local result = CivicOS.SlaRepository:exempt(id)
+    if result.ok and result.data.changed and CivicOS.AuditService then CivicOS.AuditService:record(source, { entityType = "sla", entityId = id, action = "exempt" }) end
+    return result
 end
 
 function SlaService:list(source, requestId)

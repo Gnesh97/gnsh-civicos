@@ -284,6 +284,86 @@ Api.handlers["escalation.acknowledge"] = function(source, input)
     return CivicOS.EscalationService:acknowledge(source, id)
 end
 
+Api.handlers["inspection.get"] = function(source, input)
+    local id, failure = number(tableValue(input).id, "id")
+    if not id then return failure end
+    return CivicOS.InspectionService:get(source, id)
+end
+
+Api.handlers["inspection.create"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.workorderId, "workorderId")
+    if not id then return failure end
+    return CivicOS.InspectionService:create(source, id, input.expectedVersion, input.inspectorIdentifier)
+end
+
+Api.handlers["inspection.pass"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.id, "id")
+    if not id then return failure end
+    return CivicOS.InspectionService:pass(source, id, input.notes, input.metadata)
+end
+
+Api.handlers["inspection.fail"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.id, "id")
+    if not id then return failure end
+    return CivicOS.InspectionService:fail(source, id, input.notes, input.metadata)
+end
+
+Api.handlers["inspection.rework"] = function(source, input)
+    local id, failure = number(tableValue(input).id, "id")
+    if not id then return failure end
+    return CivicOS.InspectionService:rework(source, id, tableValue(input).notes)
+end
+
+Api.handlers["evidence.add"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.entityId, "entityId")
+    if not id then return failure end
+    return CivicOS.EvidenceService:add(source, input.entityType, id, input.evidenceType, input.uri, input.metadata)
+end
+
+Api.handlers["evidence.list"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.entityId, "entityId")
+    if not id then return failure end
+    return CivicOS.EvidenceService:list(source, input.entityType, id)
+end
+
+Api.handlers["evidence.remove"] = function(source, input)
+    local id, failure = number(tableValue(input).id, "id")
+    if not id then return failure end
+    return CivicOS.EvidenceService:remove(source, id)
+end
+
+Api.handlers["activity.request"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.requestId, "requestId")
+    if not id then return failure end
+    local result = CivicOS.ActivityService:request(source, id, input.page, input.pageSize)
+    if not result.ok then return result end
+    return { ok = true, data = CivicOS.Serializers.paginated(result.data, input.page, input.pageSize) }
+end
+
+Api.handlers["activity.workorder"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.workorderId, "workorderId")
+    if not id then return failure end
+    local result = CivicOS.ActivityService:workorder(source, id, input.page, input.pageSize)
+    if not result.ok then return result end
+    return { ok = true, data = CivicOS.Serializers.paginated(result.data, input.page, input.pageSize) }
+end
+
+Api.handlers["audit.list"] = function(source, input)
+    input = tableValue(input)
+    local id, failure = number(input.entityId, "entityId")
+    if not id then return failure end
+    local result = CivicOS.AuditService:list(source, input.entityType, id, input.page, input.pageSize)
+    if not result.ok then return result end
+    return { ok = true, data = CivicOS.Serializers.paginated(result.data, input.page, input.pageSize) }
+end
+
 function Api.dispatch(source, operation, input)
     if type(operation) ~= "string" or operation == "" then return errorResult("CORE_INVALID_INPUT", "API operation is required.") end
     local handler = Api.handlers[operation]

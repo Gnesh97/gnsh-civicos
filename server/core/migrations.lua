@@ -9,6 +9,7 @@ local Migrations = {
         { version = 4, id = "004_assignment_reason", file = "sql/004_assignment_reason.sql", checksum = "civicos-004-assignment-reason-v1" },
         { version = 5, id = "005_sla_state", file = "sql/005_sla_state.sql", checksum = "civicos-005-sla-state-v1" },
         { version = 6, id = "006_escalations", file = "sql/006_escalations.sql", checksum = "civicos-006-escalations-v1" },
+        { version = 7, id = "007_evidence_retention", file = "sql/007_evidence_retention.sql", checksum = "civicos-007-evidence-retention-v1" },
     },
 }
 

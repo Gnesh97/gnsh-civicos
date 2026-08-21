@@ -55,6 +55,12 @@ local Config = {
         WarningLeadSeconds = 300,
         BatchSize = 100,
     },
+
+    Evidence = {
+        MaxUriLength = 2048,
+        AllowedDomains = {},
+        RetainDays = 30,
+    },
 }
 
 CivicOS.Config = Config

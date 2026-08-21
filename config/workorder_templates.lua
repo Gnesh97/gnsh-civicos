@@ -30,7 +30,7 @@ local Templates = {
         checklist = { "power_isolated", "controller_checked", "signal_tested" },
         requiredItems = { { item = "repair_kit", count = 1 } },
         requiredCertifications = { "traffic_systems_technician" },
-        inspectionRequired = false,
+        inspectionRequired = true,
     },
     pothole_repair = {
         key = "pothole_repair",

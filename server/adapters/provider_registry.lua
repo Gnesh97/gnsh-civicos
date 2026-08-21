@@ -37,11 +37,21 @@ function Providers.initialize()
     local notifyContract = CivicOS.NotifyInterface.validate(notify)
     if not notifyContract.ok then return notifyContract end
 
+    local evidenceName = adapterConfig.Evidence or "none"
+    local evidence = CivicOS.EvidenceAdapters and CivicOS.EvidenceAdapters[evidenceName]
+    if not evidence then
+        return errorResult("ADAPTER_UNAVAILABLE", "Evidence adapter is not registered.", { provider = evidenceName })
+    end
+    local evidenceContract = CivicOS.EvidenceInterface.validate(evidence)
+    if not evidenceContract.ok then return evidenceContract end
+
     CivicOS.Inventory = inventory
     CivicOS.Notify = notify
+    CivicOS.Evidence = evidence
     CivicOS.ProviderCapabilities = {
         inventory = inventory:getCapabilities(),
         notify = notify:getCapabilities(),
+        evidence = evidence:getCapabilities(),
     }
     return { ok = true, data = CivicOS.ProviderCapabilities }
 end

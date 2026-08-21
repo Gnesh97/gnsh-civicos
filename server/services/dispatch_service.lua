@@ -48,6 +48,7 @@ function DispatchService:assign(source, workorderId, expectedVersion, employeeId
         reason
     )
     if not assigned.ok then return assigned end
+    if CivicOS.AuditService then CivicOS.AuditService:record(source, { entityType = "workorder", entityId = workorderId, action = "assign", after = { employeeId = employeeId, reason = reason } }) end
     if entity.request_id and CivicOS.SlaService then CivicOS.SlaService:markMilestone(entity.request_id, "dispatch", auth.data.identity.persistentIdentifier) end
     if CivicOS.NotificationService and candidate.persistent_identifier then
         CivicOS.NotificationService:create(candidate.persistent_identifier, "assignment", "civicos.assignment.title", "civicos.assignment.body", { workorderId = workorderId, reason = reason }, candidate.source)
@@ -77,6 +78,7 @@ function DispatchService:selfAssign(source, workorderId, expectedVersion)
         "self_assign"
     )
     if not assigned.ok then return assigned end
+    if CivicOS.AuditService then CivicOS.AuditService:record(source, { entityType = "workorder", entityId = workorderId, action = "self_assign", after = { employeeId = candidate.id } }) end
     if entity.request_id and CivicOS.SlaService then CivicOS.SlaService:markMilestone(entity.request_id, "dispatch", auth.data.identity.persistentIdentifier) end
     if CivicOS.NotificationService then
         CivicOS.NotificationService:create(candidate.persistent_identifier, "assignment", "civicos.assignment.title", "civicos.assignment.body", { workorderId = workorderId, reason = "self_assign" }, source)

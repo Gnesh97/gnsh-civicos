@@ -16,6 +16,7 @@ running FiveM server and a disposable database.
    working`.
 5. The technician starts and completes `inspect`, `repair`, and `test` using
    action tokens. A replayed or too-distant completion must be rejected.
-6. Required checklist values are submitted and the technician completes the
-   work order. The citizen sees the request move to `resolved` and then
-   `closed` through the public timeline.
+6. Required checklist values are submitted. The technician moves the work
+   order to `pending_inspection`; a supervisor passes the inspection, and the
+   technician completes the work order. The citizen sees the request move to
+   `resolved` and then `closed` through the public timeline.
