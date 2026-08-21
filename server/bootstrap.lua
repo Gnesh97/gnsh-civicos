@@ -125,6 +125,9 @@ local function stageServices()
             activityService = CivicOS.ActivityService,
             contributionService = CivicOS.ContributionService,
             incidentService = CivicOS.IncidentService,
+            outboxRepository = CivicOS.OutboxRepository,
+            eventBus = CivicOS.EventBus,
+            idempotency = CivicOS.Idempotency,
         }
         for name, definition in pairs(registrations) do
             if definition and not CivicOS.Container._definitions[name] then

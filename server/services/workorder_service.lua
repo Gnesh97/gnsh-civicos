@@ -33,14 +33,23 @@ local function crewMemberAuth(source, entity, permission)
     return nil
 end
 
-function WorkOrderService:convert(source, requestId, expectedVersion, serviceCode, overrides)
+function WorkOrderService:convert(source, requestId, expectedVersion, serviceCode, overrides, context)
     overrides = type(overrides) == "table" and overrides or {}
     local requestResult = CivicOS.RequestRepository:findById(requestId)
     if not requestResult.ok then return requestResult end
     local request = requestResult.data[1]
     if not request then return errorResult("CORE_NOT_FOUND", "Request not found.") end
-    local auth = CivicOS.Authorization:can(source, "request.convert", { departmentId = request.department_id })
-    if not auth.ok then return auth end
+    local auth
+    if source then
+        auth = CivicOS.Authorization:can(source, "request.convert", { departmentId = request.department_id })
+        if not auth.ok then return auth end
+    else
+        context = type(context) == "table" and context or {}
+        if request.source ~= "integration" or (context.sourceResource and request.source_resource ~= context.sourceResource) then
+            return errorResult("AUTH_FORBIDDEN", "Integration cannot convert this request.")
+        end
+        auth = { ok = true, data = { identity = { persistentIdentifier = context.actorIdentifier or "integration" } } }
+    end
     if tonumber(expectedVersion) ~= tonumber(request.version) then return errorResult("CORE_VERSION_CONFLICT", "Request version conflict.") end
     local transition = CivicOS.RequestStateMachine.transition(request, CivicOS.Enums.RequestStatus.CONVERTED, { actorIdentifier = actorIdentifier(auth) })
     if not transition.ok then return transition end
@@ -148,6 +157,7 @@ function WorkOrderService:get(source, id)
     if not result.ok then return result end
     local entity = result.data[1]
     if not entity then return errorResult("CORE_NOT_FOUND", "Work order not found.") end
+    if not source then return { ok = true, data = CivicOS.WorkOrderDomain.public(entity) } end
     local employee = entity.assigned_employee_id and CivicOS.EmployeeRepository:findById(entity.assigned_employee_id)
     local assignedIdentifier = employee and employee.ok and employee.data[1] and employee.data[1].persistent_identifier
     local auth = CivicOS.Authorization:can(source, "workorder.read.assigned", {

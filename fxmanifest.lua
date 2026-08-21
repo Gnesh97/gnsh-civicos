@@ -49,6 +49,8 @@ server_scripts {
     "server/security/exploit_guard.lua",
     "server/container.lua",
     "server/jobs/scheduler.lua",
+    "server/core/event_bus.lua",
+    "server/core/idempotency.lua",
     "server/core/migrations.lua",
     "server/core/cache.lua",
     "server/core/identity.lua",
@@ -96,6 +98,9 @@ server_scripts {
     "server/repositories/inspection_repository.lua",
     "server/repositories/crew_repository.lua",
     "server/repositories/contribution_repository.lua",
+    "server/repositories/outbox_repository.lua",
+    "server/jobs/outbox_worker.lua",
+    "server/api/exports.lua",
     "server/jobs/sla_worker.lua",
     "server/bootstrap.lua",
 }

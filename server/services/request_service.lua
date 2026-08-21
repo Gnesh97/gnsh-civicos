@@ -68,7 +68,7 @@ end
 
 local function emit(topic, payload)
     if CivicOS.EventBus and CivicOS.EventBus.emit then
-        CivicOS.EventBus.emit(topic, payload)
+        CivicOS.EventBus:emit(topic, payload, { outbox = true })
     elseif type(TriggerEvent) == "function" then
         TriggerEvent("civicos:internal:" .. topic, payload)
     end
@@ -234,6 +234,57 @@ function RequestService:patch(source, id, expectedVersion, patch)
     if not updated.ok then return updated end
     auditAndActivity(id, authorization.data.identity.persistentIdentifier, "updated", { fields = { "title", "description" } })
     return { ok = true, data = { id = id, version = expectedVersion + 1 } }
+end
+
+function RequestService:integrationPatch(id, expectedVersion, patch, context)
+    context = type(context) == "table" and context or {}
+    local entityResult = CivicOS.RequestRepository:findById(id)
+    if not entityResult.ok then return entityResult end
+    local entity = entityResult.data[1]
+    if not entity then return errorResult("CORE_NOT_FOUND", "Request not found.") end
+    if entity.source ~= "integration" or (context.sourceResource and entity.source_resource ~= context.sourceResource) then
+        return errorResult("AUTH_FORBIDDEN", "Integration cannot update this request.")
+    end
+    if entity.status ~= CivicOS.Enums.RequestStatus.SUBMITTED and entity.status ~= CivicOS.Enums.RequestStatus.DRAFT then
+        return errorResult("REQUEST_INVALID_STATE", "Request cannot be edited in its current state.")
+    end
+    patch = type(patch) == "table" and patch or {}
+    local title = patch.title and CivicOS.Validation.string(patch.title, "title", { required = true, maxLength = CivicOS.Constants.Limits.REQUEST_TITLE }) or { ok = true, data = entity.title }
+    local description = patch.description and CivicOS.Validation.string(patch.description, "description", { required = true, maxLength = CivicOS.Constants.Limits.REQUEST_DESCRIPTION }) or { ok = true, data = entity.description }
+    if not title.ok then return title end
+    if not description.ok then return description end
+    local updated = CivicOS.RequestRepository:updateEditable(id, expectedVersion, title.data, description.data)
+    if not updated.ok then return updated end
+    local actor = context.actorIdentifier or "integration"
+    auditAndActivity(id, actor, "updated", { fields = { "title", "description" }, source = "integration" })
+    return updated
+end
+
+function RequestService:integrationTransition(id, expectedVersion, targetStatus, reason, context)
+    context = type(context) == "table" and context or {}
+    local entityResult = CivicOS.RequestRepository:findById(id)
+    if not entityResult.ok then return entityResult end
+    local entity = entityResult.data[1]
+    if not entity then return errorResult("CORE_NOT_FOUND", "Request not found.") end
+    if entity.source ~= "integration" or (context.sourceResource and entity.source_resource ~= context.sourceResource) then
+        return errorResult("AUTH_FORBIDDEN", "Integration cannot transition this request.")
+    end
+    if targetStatus ~= CivicOS.Enums.RequestStatus.RESOLVED and targetStatus ~= CivicOS.Enums.RequestStatus.CLOSED then
+        return errorResult("REQUEST_INVALID_STATE", "Integration transition is restricted.")
+    end
+    if tonumber(expectedVersion) ~= tonumber(entity.version) then return errorResult("CORE_VERSION_CONFLICT", "Request version conflict.") end
+    local transition = CivicOS.RequestStateMachine.transition(entity, targetStatus, { reason = reason })
+    if not transition.ok then return transition end
+    local updated = CivicOS.RequestRepository:updateStatus(id, expectedVersion, targetStatus)
+    if not updated.ok then return updated end
+    auditAndActivity(id, context.actorIdentifier or "integration", "transition", { from = entity.status, to = targetStatus, reason = reason })
+    if CivicOS.SlaService and targetStatus == CivicOS.Enums.RequestStatus.RESOLVED then
+        CivicOS.SlaService:markMilestone(id, "resolution", context.actorIdentifier or "integration")
+    end
+    if CivicOS.NotificationService then
+        CivicOS.NotificationService:forRequest(id, "request_status", "civicos.request.status.title", "civicos.request.status.body", { status = targetStatus, requestId = id })
+    end
+    return updated
 end
 
 CivicOS.RequestService = RequestService

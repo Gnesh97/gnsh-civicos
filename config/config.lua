@@ -61,6 +61,11 @@ local Config = {
         AllowedDomains = {},
         RetainDays = 30,
     },
+
+    Outbox = {
+        MaxAttempts = 10,
+        BatchSize = 50,
+    },
 }
 
 CivicOS.Config = Config
