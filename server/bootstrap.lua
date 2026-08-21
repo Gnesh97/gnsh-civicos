@@ -51,8 +51,17 @@ local function stageAdapters()
         if result and result.ok == false then
             error(result.error.message)
         end
+        if CivicOS.ProviderAdapters and CivicOS.ProviderAdapters.initialize then
+            local providers = CivicOS.ProviderAdapters.initialize()
+            if providers and providers.ok == false then
+                error(providers.error.message)
+            end
+        end
+        if CivicOS.Identity and CivicOS.Identity.start then
+            CivicOS.Identity:start()
+        end
     else
-        log("debug", "CORE", "Adapter stage deferred until provider adapters are registered.")
+        error("Framework adapter registry is not registered.")
     end
 end
 

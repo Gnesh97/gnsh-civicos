@@ -22,13 +22,27 @@ shared_scripts {
 server_scripts {
     "server/core/result.lua",
     "server/core/logger.lua",
+    "server/adapters/framework/interface.lua",
+    "server/adapters/framework/shared.lua",
+    "server/adapters/framework/standalone.lua",
+    "server/adapters/framework/qbcore.lua",
+    "server/adapters/framework/qbox.lua",
+    "server/adapters/framework/esx.lua",
+    "server/adapters/framework/registry.lua",
     "server/adapters/database/interface.lua",
     "server/adapters/database/oxmysql.lua",
     "server/adapters/logging/console.lua",
+    "server/adapters/inventory/interface.lua",
+    "server/adapters/inventory/none.lua",
+    "server/adapters/inventory/ox_inventory.lua",
+    "server/adapters/notify/interface.lua",
+    "server/adapters/notify/standalone.lua",
+    "server/adapters/provider_registry.lua",
     "server/security/validation.lua",
     "server/container.lua",
     "server/core/migrations.lua",
     "server/core/cache.lua",
+    "server/core/identity.lua",
     "server/repositories/_base.lua",
     "server/repositories/request_repository.lua",
     "server/repositories/workorder_repository.lua",
@@ -39,6 +53,10 @@ server_scripts {
 }
 
 client_scripts {
+    "client/adapters/target/interface.lua",
+    "client/adapters/target/none.lua",
+    "client/adapters/target/ox_target.lua",
+    "client/adapters/target/registry.lua",
     "client/bootstrap.lua",
 }
 
