@@ -5,6 +5,11 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Documentation correction
+
+- Updated the README implementation-status line to include completed S15/S16
+  release-candidate and release-gate work.
+
 ### Final verification snapshot — 2026-08-22
 
 - Passed Node unit tests (5/5), NUI TypeScript typecheck/build, manifest

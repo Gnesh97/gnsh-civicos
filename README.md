@@ -7,7 +7,7 @@ coupling the domain layer to one framework.
 
 ## Current status
 
-Implementation phases S00–S14 are in place on the `dev` branch. The GitHub
+Implementation phases S00–S16 are in place on the `dev` branch. The GitHub
 repository keeps `main` as the default branch; `dev` is the active development
 branch. Automated tests and load execution are intentionally deferred to the
 final verification phase, while the scenarios are documented under
