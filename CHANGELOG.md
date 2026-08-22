@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Work-order template catalog wiring
+
+- Loaded `config/workorder_templates.lua` through the FiveM manifest so runtime
+  conversion can resolve configured templates.
+- Added the missing road-sign, streetlight, property, trash, and dumping
+  cleanup templates referenced by the service catalog.
+- Added startup validation and regression coverage for catalog/template parity.
+
 ### Dispatcher vertical-slice controls
 
 - Added a role-aware Operations section to the NUI for triaging, accepting, or

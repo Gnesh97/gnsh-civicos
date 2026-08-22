@@ -5,6 +5,16 @@ local TemplateService = { _validated = false }
 
 function TemplateService:start()
     if self._validated then return { ok = true, data = true } end
+    for _, service in ipairs(CivicOS.ServiceCatalog and CivicOS.ServiceCatalog.list() or {}) do
+        local templateKey = service.workOrderTemplate
+        local template = CivicOS.WorkOrderTemplates and CivicOS.WorkOrderTemplates.get(templateKey)
+        if not template then
+            return CivicOS.Result.err("WORKORDER_TEMPLATE_NOT_FOUND", "Service catalog references a missing work order template.", {
+                serviceCode = service.code,
+                templateKey = templateKey,
+            })
+        end
+    end
     for _, template in ipairs(CivicOS.WorkOrderTemplates and CivicOS.WorkOrderTemplates.list() or {}) do
         if type(template.department) ~= "string" or type(template.actions) ~= "table" or type(template.checklist) ~= "table" then
             return CivicOS.Result.err("WORKORDER_TEMPLATE_INVALID", "Work order template is incomplete.", { key = template.key })

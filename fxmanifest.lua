@@ -22,6 +22,7 @@ shared_scripts {
     "config/permissions.lua",
     "config/departments.lua",
     "config/service_catalog.lua",
+    "config/workorder_templates.lua",
 }
 
 server_scripts {
