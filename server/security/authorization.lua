@@ -21,6 +21,7 @@ local function logDenied(source, permission, reason)
 end
 
 function Authorization:roleFor(identity)
+    if identity and identity.isAdmin == true then return "SYSTEM_ADMIN" end
     local mapping = CivicOS.Permissions and CivicOS.Permissions.JobRoleMapping or {}
     local job = identity and identity.job or {}
     local role = mapping[job.gradeName] or mapping[job.name]

@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### QBCore administrator permissions
+
+- Mapped QBCore `god` and `admin` permissions to the CivicOS
+  `SYSTEM_ADMIN` role so protected diagnostics and system operations honor the
+  framework administrator account.
+- Added a regression test covering the QBCore permission lookup and role
+  mapping.
+
 ### Diagnostics command output
 
 - Made `/civicos_diagnostics` serialize health data safely even when provider

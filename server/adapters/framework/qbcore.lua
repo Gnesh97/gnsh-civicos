@@ -7,6 +7,7 @@ local Adapter = Interface.new("qbcore")
 local callbacks = Shared.callbacks()
 local QBCore
 local internalDuty = {}
+local adminPermissionLevels = { "god", "admin" }
 
 local function resource()
     local ok, value = pcall(function()
@@ -61,10 +62,33 @@ local function data(source)
     return current and current.PlayerData or nil, current
 end
 
+function Adapter.hasPermission(source, permission)
+    local framework = core()
+    if framework and framework.Functions and type(framework.Functions.HasPermission) == "function" then
+        local ok, allowed = pcall(function()
+            return framework.Functions.HasPermission(tonumber(source) or source, permission)
+        end)
+        if ok and allowed == true then return true end
+    end
+    if type(IsPlayerAceAllowed) == "function" then
+        local ok, allowed = pcall(IsPlayerAceAllowed, tonumber(source) or source, permission)
+        if ok and allowed == true then return true end
+    end
+    return false
+end
+
+function Adapter.isAdmin(source)
+    for _, permission in ipairs(adminPermissionLevels) do
+        if Adapter.hasPermission(source, permission) then return true end
+    end
+    return false
+end
+
 function Adapter.getPlayer(source)
     local playerData = data(source)
     local identity = Shared.identity(source, playerData, "qbcore")
     identity.job.onDuty = Adapter.isOnDuty(source)
+    identity.isAdmin = Adapter.isAdmin(source)
     return identity
 end
 
