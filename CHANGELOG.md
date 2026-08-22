@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Work-order template runtime loading
+
+- Loaded the work-order template catalog explicitly on the server before its
+  validation service, avoiding client/server shared-script ordering ambiguity.
+- Included structured API error details in the NUI message so a failed
+  conversion identifies the service or template key involved.
+
 ### Work-order template catalog wiring
 
 - Loaded `config/workorder_templates.lua` through the FiveM manifest so runtime

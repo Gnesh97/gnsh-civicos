@@ -70,7 +70,13 @@
       const nui = (operation, payload = {}) => fetch(`https://${resource}/civicos:api`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation, payload }) }).catch(() => ({ ok: false }));
       const setError = (message = '') => { document.getElementById('error').textContent = message; };
       const setFormStatus = (message = '') => { document.getElementById('form-status').textContent = message; };
-      const apiErrorMessage = (result, fallback = 'The request could not be completed.') => result?.error?.message || result?.error?.code || fallback;
+      const apiErrorMessage = (result, fallback = 'The request could not be completed.') => {
+        const error = result?.error || {};
+        const details = error.details && typeof error.details === 'object'
+          ? Object.entries(error.details).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)).map(([key, value]) => `${key}=${value}`).join(', ')
+          : '';
+        return [error.message || error.code || fallback, details ? `(${details})` : ''].filter(Boolean).join(' ');
+      };
       const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
       const identityRole = () => state.bootstrap?.identity?.role || 'CITIZEN';
       const permissions = () => {
