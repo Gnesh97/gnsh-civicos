@@ -5,6 +5,12 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Human-readable service labels
+
+- Converted `service.*` catalog keys to readable title-case labels in the NUI
+  selector while keeping service codes unchanged for request submission.
+- Added lifecycle regression coverage for service label rendering.
+
 ### Client catalog fallback
 
 - Sent a JSON-safe service catalog with the `/civicos` open message from the

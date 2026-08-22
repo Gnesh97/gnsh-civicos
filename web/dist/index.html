@@ -88,6 +88,16 @@
           .map((key) => catalog[key])
           .filter((service) => service && typeof service === 'object');
       };
+      const humanizeServiceLabel = (service) => {
+        const raw = String(service?.label || service?.code || 'Unknown service');
+        const key = raw.startsWith('service.') ? raw.slice('service.'.length) : raw;
+        const label = key
+          .replace(/[_-]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .replace(/\b\w/g, (letter) => letter.toUpperCase());
+        return label || 'Unknown service';
+      };
       const renderServices = () => {
         const select = document.getElementById('service');
         const selected = select.value;
@@ -96,7 +106,7 @@
         for (const service of services) {
           const option = document.createElement('option');
           option.value = service.code || '';
-          option.textContent = service.label || service.code || 'Unknown service';
+          option.textContent = humanizeServiceLabel(service);
           select.append(option);
         }
         if (!services.length) {

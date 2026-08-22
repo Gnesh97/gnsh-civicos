@@ -35,6 +35,8 @@ test("NUI stays hidden until an open message arrives", () => {
   assert.match(index, /message\.type === 'civicos:close'/);
   assert.match(index, /const renderServices = \(\) =>/);
   assert.match(index, /const catalogEntries = \(catalog\) =>/);
+  assert.match(index, /const humanizeServiceLabel = \(service\) =>/);
+  assert.match(index, /option\.textContent = humanizeServiceLabel\(service\)/);
   assert.match(index, /catalogEntries\(bootstrap\.catalog\)/);
   assert.match(index, /catalogEntries\(message\.payload\?\.catalog\)/);
   assert.match(index, /catalog\.length \? catalog : \(state\.bootstrap\?\.catalog \|\| \[\]\)/);
