@@ -11,6 +11,14 @@ local function tableValue(value)
     return type(value) == "table" and value or {}
 end
 
+local function callbackTraceback(message)
+    local debugLibrary = rawget(_G, "debug")
+    if type(debugLibrary) == "table" and type(debugLibrary.traceback) == "function" then
+        return debugLibrary.traceback(tostring(message), 2)
+    end
+    return tostring(message)
+end
+
 local function number(value, field)
     local parsed = tonumber(value)
     if not parsed or parsed % 1 ~= 0 or parsed < 1 then
@@ -472,9 +480,13 @@ function Api.dispatch(source, operation, input)
     if not identity.ok then return identity end
     local limited = CivicOS.RateLimit:allow(identity.data.persistentIdentifier, "generic_callback")
     if not limited.ok then return limited end
-    local ok, result = pcall(handler, source, input)
+    local ok, result = xpcall(function()
+        return handler(source, input)
+    end, callbackTraceback)
     if not ok then
-        if CivicOS.Logger then CivicOS.Logger.error("API", "Callback handler failed.", { operation = operation }) end
+        if CivicOS.Logger then
+            CivicOS.Logger.error("API", "Callback handler failed.", { operation = operation, error = result })
+        end
         return errorResult("API_HANDLER_FAILED", "The requested operation could not be completed.")
     end
     local safeResult = CivicOS.Serializers.jsonSafe(CivicOS.Serializers.safeError(result))

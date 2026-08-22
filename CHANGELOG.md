@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Work-order list runtime resilience
+
+- Added a safe DTO fallback when the work-order domain serializer is not yet
+  available during a resource hot reload.
+- Included traceback details in callback failure logs so API runtime errors no
+  longer appear as an operation-only message.
+
 ### Work-order operations listing
 
 - Loaded the work-order domain serializer in the server manifest before the

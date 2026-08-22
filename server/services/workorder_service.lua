@@ -33,6 +33,41 @@ local function crewMemberAuth(source, entity, permission)
     return nil
 end
 
+local function publicWorkOrder(entity)
+    if type(entity) ~= "table" then return nil end
+
+    local domain = CivicOS.WorkOrderDomain
+    if type(domain) == "table" and type(domain.public) == "function" then
+        local ok, result = pcall(domain.public, entity)
+        if ok and type(result) == "table" then return result end
+    end
+
+    -- Keep list responses available while a resource is being hot-reloaded or
+    -- when an older manifest has not registered the domain module yet. The DTO
+    -- has the exact list projection required by the API boundary.
+    local dto = CivicOS.DTO
+    if type(dto) == "table" and type(dto.workOrderListItem) == "function" then
+        local ok, result = pcall(dto.workOrderListItem, entity)
+        if ok and type(result) == "table" then return result end
+    end
+
+    return {
+        id = entity.id,
+        requestId = entity.request_id or entity.requestId,
+        reference = entity.reference,
+        templateKey = entity.template_key or entity.templateKey,
+        priority = entity.priority,
+        status = entity.status,
+        departmentId = entity.department_id or entity.departmentId,
+        assignedEmployeeId = entity.assigned_employee_id or entity.assignedEmployeeId,
+        assignedCrewId = entity.assigned_crew_id or entity.assignedCrewId,
+        location = entity.location,
+        version = entity.version,
+        createdAt = entity.created_at or entity.createdAt,
+        updatedAt = entity.updated_at or entity.updatedAt,
+    }
+end
+
 function WorkOrderService:convert(source, requestId, expectedVersion, serviceCode, overrides, context)
     overrides = type(overrides) == "table" and overrides or {}
     local requestResult = CivicOS.RequestRepository:findById(requestId)
@@ -194,7 +229,11 @@ function WorkOrderService:list(source, filters)
     local result = CivicOS.WorkOrderRepository:list(filters)
     if not result.ok then return result end
     local public = {}
-    for _, entity in ipairs(result.data) do public[#public + 1] = CivicOS.WorkOrderDomain.public(entity) end
+    for _, entity in ipairs(result.data or {}) do
+        local projected = publicWorkOrder(entity)
+        if not projected then return errorResult("API_RESPONSE_INVALID", "Work order response could not be serialized.") end
+        public[#public + 1] = projected
+    end
     return { ok = true, data = public }
 end
 
