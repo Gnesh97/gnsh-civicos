@@ -41,5 +41,9 @@ test("NUI stays hidden until an open message arrives", () => {
   assert.match(index, /catalogEntries\(message\.payload\?\.catalog\)/);
   assert.match(index, /catalog\.length \? catalog : \(state\.bootstrap\?\.catalog \|\| \[\]\)/);
   assert.match(index, /message\.operation === 'bootstrap'[\s\S]*renderServices\(\)/);
+  assert.match(index, /message\.operation === 'request\.create'/);
+  assert.match(index, /result\?\.error\?\.message/);
+  assert.match(index, /refreshRequests\(\)/);
+  assert.match(index, /document\.getElementById\('request-form'\)\.reset\(\)/);
   assert.match(index, /document\.addEventListener\('keydown'/);
 });

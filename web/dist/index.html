@@ -61,6 +61,8 @@
       const mock = typeof GetParentResourceName !== 'function';
       const nui = (operation, payload = {}) => fetch(`https://${resource}/civicos:api`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation, payload }) }).catch(() => ({ ok: false }));
       const setError = (message = '') => { document.getElementById('error').textContent = message; };
+      const setFormStatus = (message = '') => { document.getElementById('form-status').textContent = message; };
+      const apiErrorMessage = (result, fallback = 'The request could not be completed.') => result?.error?.message || result?.error?.code || fallback;
       const setVisible = (visible) => {
         state.open = visible;
         document.documentElement.classList.toggle('civicos-visible', visible);
@@ -120,6 +122,10 @@
           select.value = selected;
         }
       };
+      const refreshRequests = () => {
+        if (mock) return load();
+        nui('request.list', { page: 1, pageSize: 25 });
+      };
       const applyMessage = (message) => {
         if (!message) return;
         if (message.type === 'civicos:open') {
@@ -133,7 +139,21 @@
           return;
         }
         if (message.type === 'civicos:close') { setVisible(false); return; }
-        if (message.type !== 'civicos:api:result' || !message.result?.ok) return;
+        if (message.type !== 'civicos:api:result') return;
+        if (!message.result?.ok) {
+          const error = apiErrorMessage(message.result);
+          setError(error);
+          if (message.operation === 'request.create') setFormStatus(`Request failed: ${error}`);
+          return;
+        }
+        setError('');
+        if (message.operation === 'request.create') {
+          const requestId = message.result.data?.id;
+          setFormStatus(requestId ? `Request submitted (#${requestId})` : 'Request submitted');
+          document.getElementById('request-form').reset();
+          refreshRequests();
+          return;
+        }
         if (message.operation === 'bootstrap') {
           const bootstrap = message.result.data || {};
           const catalog = catalogEntries(bootstrap.catalog);
@@ -153,7 +173,7 @@
         renderServices();
         renderStats(); renderRequests();
       };
-      document.getElementById('refresh').addEventListener('click', () => { if (mock) return load(); nui('request.list', { page: 1, pageSize: 25 }); });
+      document.getElementById('refresh').addEventListener('click', refreshRequests);
       document.getElementById('close').addEventListener('click', () => {
         setVisible(false);
         if (!mock) fetch(`https://${resource}/civicos:close`, { method: 'POST', body: '{}' }).catch(() => undefined);
@@ -164,11 +184,9 @@
       });
       document.getElementById('request-form').addEventListener('submit', async (event) => {
         event.preventDefault();
-        const status = document.getElementById('form-status'); status.textContent = 'Submitting…';
-        if (mock) { status.textContent = 'Saved in mock mode'; return; }
-        await nui('request.create', { serviceCode: document.getElementById('service').value, title: document.getElementById('title').value, description: document.getElementById('description').value, location: { x: 0, y: 0, z: 0 } });
-        status.textContent = 'Request submitted';
-        document.getElementById('request-form').reset();
+        setFormStatus('Submitting…');
+        if (mock) { setFormStatus('Saved in mock mode'); return; }
+        nui('request.create', { serviceCode: document.getElementById('service').value, title: document.getElementById('title').value, description: document.getElementById('description').value, location: { x: 0, y: 0, z: 0 } });
       });
       if (mock) setVisible(true);
     </script>

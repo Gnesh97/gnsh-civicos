@@ -5,6 +5,12 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Request submission feedback
+
+- Waited for the server result before marking a request as submitted.
+- Displayed API errors in the form and refreshed the request list automatically
+  after a successful create operation.
+
 ### Framework callback contract
 
 - Fixed framework adapter callbacks being registered with the adapter table as
