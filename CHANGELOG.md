@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Work-order operations listing
+
+- Loaded the work-order domain serializer in the server manifest before the
+  work-order service, preventing `workorder.list` callbacks from failing after
+  a request is converted.
+- Added manifest regression coverage for the required load order.
+
 ### Work-order template registry fallback
 
 - Added a server-side fallback loader for the template registry when the

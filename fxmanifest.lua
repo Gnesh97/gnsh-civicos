@@ -60,6 +60,7 @@ server_scripts {
     "server/services/employee_service.lua",
     "server/domain/service_catalog.lua",
     "server/domain/request.lua",
+    "server/domain/workorder.lua",
     "server/state/request_state_machine.lua",
     "server/state/inspection_state_machine.lua",
     "server/services/service_catalog_service.lua",

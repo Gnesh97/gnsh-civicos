@@ -19,7 +19,9 @@ test("client target adapters receive the shared Result contract", () => {
 
   assert.match(sharedScripts, /"server\/core\/result\.lua"/);
   assert.match(serverScripts, /"config\/workorder_templates\.lua"/);
+  assert.match(serverScripts, /"server\/domain\/workorder\.lua"/);
   assert.doesNotMatch(serverScripts, /"server\/core\/result\.lua"/);
   assert.ok(manifest.indexOf('"server/core/result.lua"') < manifest.indexOf("client_scripts"));
   assert.ok(manifest.indexOf('"config/workorder_templates.lua"') < manifest.indexOf('"server/services/workorder_template_service.lua"'));
+  assert.ok(manifest.indexOf('"server/domain/workorder.lua"') < manifest.indexOf('"server/services/workorder_service.lua"'));
 });
