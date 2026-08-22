@@ -5,6 +5,12 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Work-order transition state machine loading
+
+- Loaded the work-order state machine in the server manifest so self-assignment
+  can transition safely to `acknowledged` and subsequent operational states.
+- Added the load-order assertion to the existing manifest regression test.
+
 ### Work-order list runtime resilience
 
 - Added a safe DTO fallback when the work-order domain serializer is not yet
