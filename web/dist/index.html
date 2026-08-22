@@ -7,7 +7,8 @@
     <style>
       :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #10151d; color: #eef4fb; }
       * { box-sizing: border-box; }
-      body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 20% 0%, #1e3447, transparent 45%), #10151d; }
+      body { display: none; margin: 0; min-height: 100vh; background: radial-gradient(circle at 20% 0%, #1e3447, transparent 45%), #10151d; }
+      body.civicos-visible { display: block; }
       #root { max-width: 1180px; margin: 0 auto; padding: 28px; }
       header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
       h1, h2, p { margin: 0; }
@@ -53,11 +54,17 @@
       </section>
     </main>
     <script>
-      const state = { bootstrap: null, requests: [] };
+      const state = { bootstrap: null, requests: [], open: false };
       const resource = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'gnsh-civicos';
       const mock = typeof GetParentResourceName !== 'function';
       const nui = (operation, payload = {}) => fetch(`https://${resource}/civicos:api`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation, payload }) }).catch(() => ({ ok: false }));
       const setError = (message = '') => { document.getElementById('error').textContent = message; };
+      const setVisible = (visible) => {
+        state.open = visible;
+        document.body.classList.toggle('civicos-visible', visible);
+        document.body.setAttribute('aria-hidden', String(!visible));
+        if (visible) load();
+      };
       const renderStats = () => {
         const identity = state.bootstrap?.identity || { displayName: 'Citizen', role: 'CITIZEN' };
         document.getElementById('subtitle').textContent = `${identity.displayName} · ${identity.role}${identity.departmentName ? ` · ${identity.departmentName}` : ''}`;
@@ -70,7 +77,10 @@
         target.innerHTML = `<table><thead><tr><th>Reference</th><th>Title</th><th>Priority</th><th>Status</th></tr></thead><tbody>${state.requests.map(r => `<tr><td>${r.reference || r.id}</td><td>${r.title || ''}</td><td>${r.priority || 'normal'}</td><td><span class="pill">${r.status}</span></td></tr>`).join('')}</tbody></table>`;
       };
       const applyMessage = (message) => {
-        if (!message || message.type !== 'civicos:api:result' || !message.result?.ok) return;
+        if (!message) return;
+        if (message.type === 'civicos:open') { setVisible(true); return; }
+        if (message.type === 'civicos:close') { setVisible(false); return; }
+        if (message.type !== 'civicos:api:result' || !message.result?.ok) return;
         if (message.operation === 'bootstrap') state.bootstrap = message.result.data;
         if (message.operation === 'request.list') state.requests = message.result.data.items || [];
         renderStats(); renderRequests();
@@ -87,7 +97,14 @@
         renderStats(); renderRequests();
       };
       document.getElementById('refresh').addEventListener('click', () => { if (mock) return load(); nui('request.list', { page: 1, pageSize: 25 }); });
-      document.getElementById('close').addEventListener('click', () => fetch(`https://${resource}/civicos:close`, { method: 'POST', body: '{}' }).catch(() => undefined));
+      document.getElementById('close').addEventListener('click', () => {
+        setVisible(false);
+        if (!mock) fetch(`https://${resource}/civicos:close`, { method: 'POST', body: '{}' }).catch(() => undefined);
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || !state.open) return;
+        document.getElementById('close').click();
+      });
       document.getElementById('request-form').addEventListener('submit', async (event) => {
         event.preventDefault();
         const status = document.getElementById('form-status'); status.textContent = 'Submitting…';
@@ -96,7 +113,7 @@
         status.textContent = 'Request submitted';
         document.getElementById('request-form').reset();
       });
-      load();
+      if (mock) setVisible(true);
     </script>
   </body>
 </html>

@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Command-gated NUI visibility
+
+- Kept the CivicOS NUI hidden during resource startup instead of rendering it
+  over the game immediately.
+- Opened the panel only after the `/civicos` client command sends the NUI open
+  message, with Close and Escape closing the panel and releasing focus.
+- Added a regression test for the command and open/close message lifecycle.
+
 ### oxmysql async export fix
 
 - Switched the database adapter to oxmysql's documented `*_async` exports so

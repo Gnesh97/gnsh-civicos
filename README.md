@@ -36,6 +36,8 @@ Implemented capabilities include:
    and [`config/adapters.lua`](config/adapters.lua).
 5. Restart the resource. Database migrations run automatically when
    `Config.Database.MigrationOnStart` is enabled.
+6. Open the in-game CivicOS panel with `/civicos`. Use **Close** or **Escape**
+   to hide it again; the panel stays hidden when the resource starts.
 
 The framework adapter is selected automatically by default. Set
 `Config.Framework.Provider` explicitly when more than one framework resource is
