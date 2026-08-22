@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Client-side NUI JSON guard
+
+- Sanitized every `SendNUIMessage` payload on the client as a second boundary
+  guard for provider/function values arriving from server events.
+- Preserved catalog arrays while dropping unsupported, cyclic, and deep values.
+- Extended the NUI lifecycle regression to cover the guarded send path.
+
 ### JSON-safe NUI API responses
 
 - Sanitized API callback results before `TriggerClientEvent` so functions,

@@ -15,6 +15,9 @@ test("CivicOS opens from the player command and closes through NUI", () => {
   assert.match(clientNui, /NUI:openView\("home"\)/);
   assert.match(clientNui, /NUI:closeView\(\)/);
   assert.match(clientNui, /CivicOS\.NUI = NUI[\s\S]*NUI:closeView\(\)/);
+  assert.match(clientNui, /local function jsonSafe\(value\)/);
+  assert.match(clientNui, /local function send\(message\)/);
+  assert.match(clientNui, /SendNUIMessage\(jsonSafe\(message\)\)/);
 });
 
 test("NUI stays hidden until an open message arrives", () => {
