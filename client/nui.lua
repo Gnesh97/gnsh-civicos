@@ -99,7 +99,7 @@ end
 
 if type(RegisterNUICallback) == "function" then
     RegisterNUICallback("civicos:api", function(data, callback)
-        local requestId = NUI:call(data and data.operation, data and data.payload)
+        local requestId = NUI.call(data and data.operation, data and data.payload)
         callback({ ok = true, data = { requestId = requestId } })
     end)
     RegisterNUICallback("civicos:close", function(_, callback)

@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### NUI API operation forwarding
+
+- Fixed the NUI callback invoking the dot-based API call helper with colon
+  syntax, which sent the NUI table instead of the requested operation.
+- Restored bootstrap, request listing, and request submission API calls from
+  the panel.
+- Added a regression assertion for the client-to-server operation forwarding.
+
 ### Request submission feedback
 
 - Waited for the server result before marking a request as submitted.
