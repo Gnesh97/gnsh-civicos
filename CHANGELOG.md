@@ -5,6 +5,19 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Migration and schema startup guard
+
+- Split SQL migration files into individual statements so oxmysql does not
+  require `multipleStatements` to be enabled.
+- Included migration SQL files in the FiveM resource package.
+- Declared the oxmysql resource dependency so grouped resource startup cannot
+  run CivicOS before the database provider is ready.
+- Added required-table verification and prevented the scheduler from starting
+  when CivicOS schema tables are missing, replacing repeated worker errors with
+  one actionable startup failure.
+- Added Lua regression coverage for statement splitting and schema checks.
+- Added the migration regression to the manual GitHub Actions quality workflow.
+
 ### oxmysql export fallback fix
 
 - Fixed the database adapter's CFX export invocation to pass the oxmysql

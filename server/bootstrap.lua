@@ -37,11 +37,18 @@ local function stageDatabase()
     if health and health.ok == false then
         error(health.error.message)
     end
-    if CivicOS.Config.Database.MigrationOnStart and CivicOS.Migrations then
+    if not CivicOS.Migrations then
+        error("Migration service is not registered.")
+    end
+    if CivicOS.Config.Database.MigrationOnStart then
         local migration = CivicOS.Migrations.run()
         if not migration.ok then
             error(migration.error.message)
         end
+    end
+    local schema = CivicOS.Migrations.verifyRequiredTables()
+    if not schema.ok then
+        error(schema.error.message)
     end
 end
 

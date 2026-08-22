@@ -6,6 +6,8 @@ author "Gnesh97"
 description "CivicOS municipal operations core"
 version "0.1.0"
 
+dependency "oxmysql"
+
 shared_scripts {
     "shared/version.lua",
     "shared/constants.lua",
@@ -132,5 +134,6 @@ ui_page "web/dist/index.html"
 files {
     "locales/en.json",
     "locales/tr.json",
+    "sql/*.sql",
     "web/dist/index.html",
 }
