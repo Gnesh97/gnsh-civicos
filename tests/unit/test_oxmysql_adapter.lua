@@ -4,16 +4,24 @@
 local calls = {}
 
 local provider = {}
-function provider.query(self, sql, params)
-    assert(self == provider, "query export must receive its provider object")
-    assert(type(sql) == "string", "query export must receive SQL as its second argument")
+function provider.query_async(self, sql, params)
+    assert(self == provider, "query_async export must receive its provider object")
+    assert(type(sql) == "string", "query_async export must receive SQL as its second argument")
     calls[#calls + 1] = { method = "query", sql = sql, params = params }
     return {}
 end
 
-function provider.transaction(self, statements)
-    assert(self == provider, "transaction export must receive its provider object")
-    assert(type(statements) == "table", "transaction export must receive statements")
+function provider.scalar_async(self, sql, params)
+    assert(self == provider, "scalar_async export must receive its provider object")
+    assert(sql == "SELECT 10", "scalar_async should receive the SQL string")
+    assert(params[1] == 10, "scalar parameters must be preserved")
+    calls[#calls + 1] = { method = "scalar", sql = sql, params = params }
+    return 10
+end
+
+function provider.transaction_async(self, statements)
+    assert(self == provider, "transaction_async export must receive its provider object")
+    assert(type(statements) == "table", "transaction_async export must receive statements")
     calls[#calls + 1] = { method = "transaction", statements = statements }
     return true
 end
@@ -42,8 +50,11 @@ assert(#calls == 1 and calls[1].method == "query", "query export should be calle
 assert(calls[1].sql == "SELECT 1", "SQL must not be replaced by the parameter value")
 assert(calls[1].params[1] == 100, "query parameters must be preserved")
 
+local scalarResult = database:scalar("SELECT 10", { 10 })
+assert(scalarResult.ok and scalarResult.data == 10, "scalar should return the awaited export result")
+
 local transactionResult = database:transaction({ { "SELECT 1", {} } })
 assert(transactionResult.ok, "transaction should succeed through the CFX export fallback")
-assert(#calls == 2 and calls[2].method == "transaction", "transaction export should be called once")
+assert(#calls == 3 and calls[3].method == "transaction", "transaction export should be called once")
 
-print("oxmysql export fallback regression: PASS (query + transaction)")
+print("oxmysql async export regression: PASS (query + scalar + transaction)")

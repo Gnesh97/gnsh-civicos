@@ -23,12 +23,18 @@ local function invoke(method, sql, params)
 
     if type(MySQL) == "table" and type(MySQL[method]) == "table" and type(MySQL[method].await) == "function" then
         ok, result = pcall(MySQL[method].await, sql, params or {})
-    elseif type(exports) == "table" and exports.oxmysql and type(exports.oxmysql[method]) == "function" then
-        -- CFX export proxies expect the provider object as their first argument.
-        -- Omitting it shifts the parameter table into the query slot, which
-        -- makes oxmysql reject the call with "query must be a string".
+    elseif type(exports) == "table" and exports.oxmysql then
+        -- The plain oxmysql exports are callback-based. Use the documented
+        -- *_async aliases so the adapter receives the completed result instead
+        -- of treating an immediate nil return as a successful empty response.
         local provider = exports.oxmysql
-        ok, result = pcall(provider[method], provider, sql, params or {})
+        local exportName = method .. "_async"
+        if type(provider[exportName]) ~= "function" then
+            return nil, "oxmysql async export is not available"
+        end
+        ok, result = pcall(function()
+            return provider[exportName](provider, sql, params or {})
+        end)
     else
         return nil, "oxmysql provider is not available"
     end
@@ -97,9 +103,14 @@ function Database:transaction(statements)
         end
         return { ok = true, data = result }
     end
-    if type(exports) == "table" and exports.oxmysql and type(exports.oxmysql.transaction) == "function" then
+    if type(exports) == "table" and exports.oxmysql then
         local provider = exports.oxmysql
-        local ok, result = pcall(provider.transaction, provider, statements)
+        if type(provider.transaction_async) ~= "function" then
+            return Interface.normalizeError("oxmysql async transaction export is not available", "transaction")
+        end
+        local ok, result = pcall(function()
+            return provider.transaction_async(provider, statements)
+        end)
         if not ok then
             return Interface.normalizeError(result, "transaction")
         end

@@ -5,6 +5,16 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### oxmysql async export fix
+
+- Switched the database adapter to oxmysql's documented `*_async` exports so
+  scalar migration version reads wait for their result instead of returning
+  `nil` immediately.
+- Prevented duplicate migration/index attempts caused by treating callback
+  exports as synchronous operations.
+- Expanded the adapter regression test to cover query, scalar, and transaction
+  async exports.
+
 ### Migration and schema startup guard
 
 - Split SQL migration files into individual statements so oxmysql does not
