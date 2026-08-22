@@ -58,4 +58,5 @@ if type(RegisterCommand) == "function" then
 end
 
 CivicOS.NUI = NUI
+NUI:closeView()
 return NUI

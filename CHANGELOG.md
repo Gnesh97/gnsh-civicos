@@ -5,6 +5,15 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### NUI overlay teardown
+
+- Made the closed NUI document transparent at the HTML root so it cannot
+  leave a full-screen dark overlay over the game.
+- Explicitly clear NUI focus and send a close message when the client resource
+  initializes or restarts.
+- Extended the NUI lifecycle regression to cover transparent startup state and
+  restart cleanup.
+
 ### Client adapter startup fix
 
 - Loaded the shared result envelope before client target adapters so target

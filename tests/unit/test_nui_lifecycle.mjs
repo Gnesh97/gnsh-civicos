@@ -14,11 +14,13 @@ test("CivicOS opens from the player command and closes through NUI", () => {
   assert.match(clientNui, /RegisterCommand\("civicos"/);
   assert.match(clientNui, /NUI:openView\("home"\)/);
   assert.match(clientNui, /NUI:closeView\(\)/);
+  assert.match(clientNui, /CivicOS\.NUI = NUI[\s\S]*NUI:closeView\(\)/);
 });
 
 test("NUI stays hidden until an open message arrives", () => {
   const index = read("web/dist/index.html");
 
+  assert.match(index, /:root\s*\{[^}]*background:\s*transparent/);
   assert.match(index, /body\s*\{[^}]*display:\s*none/);
   assert.match(index, /body\.civicos-visible\s*\{[^}]*display:\s*block/);
   assert.match(index, /message\.type === 'civicos:open'/);
