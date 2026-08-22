@@ -477,7 +477,11 @@ function Api.dispatch(source, operation, input)
         if CivicOS.Logger then CivicOS.Logger.error("API", "Callback handler failed.", { operation = operation }) end
         return errorResult("API_HANDLER_FAILED", "The requested operation could not be completed.")
     end
-    return CivicOS.Serializers.safeError(result)
+    local safeResult = CivicOS.Serializers.jsonSafe(CivicOS.Serializers.safeError(result))
+    if type(safeResult) ~= "table" then
+        return errorResult("API_RESPONSE_INVALID", "The API response could not be serialized.")
+    end
+    return safeResult
 end
 
 if type(RegisterNetEvent) == "function" and type(AddEventHandler) == "function" then

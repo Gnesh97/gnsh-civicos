@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### JSON-safe NUI API responses
+
+- Sanitized API callback results before `TriggerClientEvent` so functions,
+  userdata, cyclic tables, and excessive nesting cannot break NUI JSON encoding.
+- Preserved array-shaped catalog data while omitting unsupported values.
+- Added a Lua regression test for function, cycle, and depth handling.
+
 ### Citizen service catalog rendering
 
 - Re-rendered the Citizen service selector when the asynchronous bootstrap
