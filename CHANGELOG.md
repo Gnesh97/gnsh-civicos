@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Field position validation compatibility
+
+- Accepted FiveM `vector3` values from `GetEntityCoords` in the server-side
+  field-operation guard, so completion no longer fails with an unavailable
+  player position on supported runtimes.
+- Captured the player's client position for NUI-created requests instead of
+  persisting the `{ 0, 0, 0 }` placeholder location.
+
 ### Work-order transition runtime fallback
 
 - Added a runtime state-machine fallback for deployments where the manifest

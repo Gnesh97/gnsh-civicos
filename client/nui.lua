@@ -62,6 +62,28 @@ local function catalogPayload()
     return result
 end
 
+local function playerPosition()
+    if type(PlayerPedId) ~= "function" or type(GetEntityCoords) ~= "function" then return nil end
+    local okPed, ped = pcall(PlayerPedId)
+    if not okPed or not ped or ped == 0 then return nil end
+    local okCoords, coords = pcall(GetEntityCoords, ped)
+    if not okCoords or not coords then return nil end
+    local x, y, z = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z)
+    if not x or not y or not z then return nil end
+    return { x = x, y = y, z = z }
+end
+
+local function preparePayload(operation, payload)
+    if operation ~= "request.create" or type(payload) ~= "table" then return payload or {} end
+    local location = playerPosition()
+    if not location then return payload end
+
+    local prepared = {}
+    for key, value in pairs(payload) do prepared[key] = value end
+    prepared.location = location
+    return prepared
+end
+
 local function nextId()
     NUI.sequence = (NUI.sequence + 1) % 2147483647
     return string.format("nui-%s-%d", GetGameTimer and GetGameTimer() or os.time(), NUI.sequence)
@@ -70,8 +92,9 @@ end
 function NUI.call(operation, payload, callback)
     local requestId = nextId()
     NUI.pending[requestId] = { callback = callback, operation = operation }
+    local preparedPayload = preparePayload(operation, payload)
     if type(TriggerServerEvent) == "function" then
-        TriggerServerEvent("civicos:server:api:call", requestId, operation, payload or {})
+        TriggerServerEvent("civicos:server:api:call", requestId, operation, preparedPayload)
     end
     return requestId
 end

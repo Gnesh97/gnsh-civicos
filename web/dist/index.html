@@ -274,7 +274,7 @@
         event.preventDefault();
         setFormStatus('Submitting…');
         if (mock) { setFormStatus('Saved in mock mode'); return; }
-        nui('request.create', { serviceCode: document.getElementById('service').value, title: document.getElementById('title').value, description: document.getElementById('description').value, location: { x: 0, y: 0, z: 0 } });
+        nui('request.create', { serviceCode: document.getElementById('service').value, title: document.getElementById('title').value, description: document.getElementById('description').value });
       });
       if (mock) setVisible(true);
     </script>
