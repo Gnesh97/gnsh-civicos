@@ -5,13 +5,20 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### QBCore export binding
+
+- Matched FiveM QBCore export calls to the bound colon-call contract used by
+  the running server resources.
+- Removed the restrictive `exports` type check and invalidated the cached core
+  object when `qb-core` restarts.
+- Added protected direct-player export calls so a valid QBCore player is found
+  before the framework-function fallback.
+
 ### QBCore player lookup
 
-- Fixed the QBCore `GetCoreObject` export call so it is invoked without an
-  export self argument, allowing the adapter to receive the real framework
-  object and resolve loaded players.
-- Added direct `GetPlayer` export support, numeric source normalization, and
-  protected framework calls so `/civicos` requests work after player load.
+- Hardened QBCore core-object retrieval, direct `GetPlayer` support, numeric
+  source normalization, and protected framework calls so `/civicos` requests
+  work after player load.
 - Added a regression test for the QBCore player lookup contract.
 
 ### NUI API operation forwarding

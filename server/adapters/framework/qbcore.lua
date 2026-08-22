@@ -9,19 +9,25 @@ local QBCore
 local internalDuty = {}
 
 local function resource()
-    if type(exports) == "table" and exports["qb-core"] then
+    local ok, value = pcall(function()
         return exports["qb-core"]
-    end
-    return nil
+    end)
+    return ok and value or nil
 end
 
 local function core()
+    if type(GetResourceState) == "function" and GetResourceState("qb-core") ~= "started" then
+        QBCore = nil
+        return nil
+    end
     if QBCore then
         return QBCore
     end
     local qb = resource()
-    if qb and type(qb.GetCoreObject) == "function" then
-        local ok, value = pcall(qb.GetCoreObject)
+    if qb then
+        local ok, value = pcall(function()
+            return qb:GetCoreObject()
+        end)
         if ok and type(value) == "table" and type(value.Functions) == "table" then
             QBCore = value
         end
@@ -32,8 +38,10 @@ end
 local function player(source)
     local normalizedSource = tonumber(source) or source
     local qb = resource()
-    if qb and type(qb.GetPlayer) == "function" then
-        local ok, value = pcall(qb.GetPlayer, normalizedSource)
+    if qb then
+        local ok, value = pcall(function()
+            return qb:GetPlayer(normalizedSource)
+        end)
         if ok and value then
             return value
         end

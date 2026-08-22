@@ -56,20 +56,27 @@ _G.CivicOS = {
     },
 }
 
+local coreCalls = 0
+local qbResource = {}
+function qbResource:GetCoreObject()
+    coreCalls = coreCalls + 1
+    return {
+        Functions = {
+            GetPlayer = function(source)
+                assert(source == 42, "QBCore player source should be normalized to a number")
+                return player
+            end,
+        },
+    }
+end
+
+function qbResource:GetPlayer(source)
+    assert(source == 42, "QBCore export player lookup should receive the normalized source")
+    return player
+end
+
 _G.exports = {
-    ["qb-core"] = {
-        GetCoreObject = function(...)
-            assert(select("#", ...) == 0, "GetCoreObject must be called without an export self argument")
-            return {
-                Functions = {
-                    GetPlayer = function(source)
-                        assert(source == 42, "QBCore player source should be normalized to a number")
-                        return player
-                    end,
-                },
-            }
-        end,
-    },
+    ["qb-core"] = qbResource,
 }
 
 local adapter = dofile("server/adapters/framework/qbcore.lua")
@@ -77,5 +84,11 @@ local adapter = dofile("server/adapters/framework/qbcore.lua")
 assert(adapter.isPlayerLoaded("42"), "QBCore player lookup should accept string sources")
 local identity = adapter.getPlayer("42")
 assert(identity.persistentIdentifier == "citizen-42", "QBCore identity should use PlayerData.citizenid")
+
+function qbResource:GetPlayer()
+    return nil
+end
+assert(adapter.isPlayerLoaded("42"), "QBCore core fallback should resolve loaded players")
+assert(coreCalls == 1, "QBCore GetCoreObject should be called through its bound export contract")
 
 print("QBCore player lookup regression: PASS")
