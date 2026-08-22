@@ -22,6 +22,9 @@
       .card { border: 1px solid #2a3b4c; border-radius: 12px; background: rgba(22, 31, 42, .92); padding: 18px; box-shadow: 0 16px 40px rgba(0,0,0,.18); }
       .stat { font-size: 28px; font-weight: 800; margin-top: 8px; }
       .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 20px 0 12px; }
+      .actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+      button.small { padding: 6px 9px; font-size: 11px; }
+      button:disabled { cursor: wait; opacity: .6; }
       input, select, textarea { width: 100%; border: 1px solid #324658; border-radius: 8px; background: #17232f; color: inherit; padding: 10px; }
       textarea { min-height: 88px; resize: vertical; }
       table { width: 100%; border-collapse: collapse; }
@@ -45,6 +48,11 @@
         <div id="error" class="error"></div>
         <div id="requests" class="empty">Loading…</div>
       </section>
+      <section class="card" style="margin-top:16px" id="operations" hidden>
+        <div class="toolbar"><h2 style="flex:1">Operations</h2><button class="secondary" id="workorders-refresh">Refresh work orders</button></div>
+        <p class="muted" style="margin-bottom:12px">Staff actions are checked again by the server before they are applied.</p>
+        <div id="workorders" class="empty">Loading…</div>
+      </section>
       <section class="card" style="margin-top:16px">
         <h2 style="margin-bottom:12px">New request</h2>
         <form id="request-form">
@@ -56,13 +64,24 @@
       </section>
     </main>
     <script>
-      const state = { bootstrap: null, requests: [], open: false };
+      const state = { bootstrap: null, requests: [], workorders: [], open: false };
       const resource = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'gnsh-civicos';
       const mock = typeof GetParentResourceName !== 'function';
       const nui = (operation, payload = {}) => fetch(`https://${resource}/civicos:api`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation, payload }) }).catch(() => ({ ok: false }));
       const setError = (message = '') => { document.getElementById('error').textContent = message; };
       const setFormStatus = (message = '') => { document.getElementById('form-status').textContent = message; };
       const apiErrorMessage = (result, fallback = 'The request could not be completed.') => result?.error?.message || result?.error?.code || fallback;
+      const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+      const identityRole = () => state.bootstrap?.identity?.role || 'CITIZEN';
+      const permissions = () => {
+        const value = state.bootstrap?.permissions;
+        if (Array.isArray(value)) return value;
+        if (!value || typeof value !== 'object') return [];
+        return Object.keys(value).filter((key) => /^\d+$/.test(key)).sort((left, right) => Number(left) - Number(right)).map((key) => value[key]);
+      };
+      const can = (permission) => permissions().includes(permission) || identityRole() === 'SYSTEM_ADMIN';
+      const isStaff = () => ['DISPATCHER', 'SUPERVISOR', 'DEPARTMENT_ADMIN', 'SYSTEM_ADMIN'].includes(identityRole());
+      const actionButton = (operation, id, version, label, targetStatus = '', serviceCode = '') => `<button class="small" data-operation="${escapeHtml(operation)}" data-id="${Number(id) || 0}" data-version="${Number(version) || 0}" data-target-status="${escapeHtml(targetStatus)}" data-service-code="${escapeHtml(serviceCode)}">${escapeHtml(label)}</button>`;
       const setVisible = (visible) => {
         state.open = visible;
         document.documentElement.classList.toggle('civicos-visible', visible);
@@ -74,12 +93,42 @@
         const identity = state.bootstrap?.identity || { displayName: 'Citizen', role: 'CITIZEN' };
         document.getElementById('subtitle').textContent = `${identity.displayName} · ${identity.role}${identity.departmentName ? ` · ${identity.departmentName}` : ''}`;
         document.getElementById('stats').innerHTML = `<div class="card"><span class="muted">Role</span><div class="stat">${identity.role}</div></div><div class="card"><span class="muted">Open requests</span><div class="stat">${state.requests.filter(r => !['closed','cancelled'].includes(r.status)).length}</div></div><div class="card"><span class="muted">Services</span><div class="stat">${state.bootstrap?.catalog?.length || 0}</div></div>`;
+        renderOperations();
+      };
+      const requestActions = (request) => {
+        if (!isStaff()) return '<span class="muted">—</span>';
+        const actions = [];
+        if (request.status === 'submitted' && can('request.triage')) actions.push(actionButton('request.transition', request.id, request.version, 'Triage', 'triaged'));
+        if (request.status === 'triaged' && can('request.accept')) actions.push(actionButton('request.transition', request.id, request.version, 'Accept', 'accepted'));
+        if (request.status === 'triaged' && can('request.reject')) actions.push(actionButton('request.transition', request.id, request.version, 'Reject', 'rejected'));
+        if (request.status === 'accepted' && can('request.convert')) actions.push(actionButton('workorder.convert', request.id, request.version, 'Create work order', '', request.subcategory || request.category));
+        return actions.length ? `<div class="actions">${actions.join('')}</div>` : '<span class="muted">—</span>';
       };
       const renderRequests = () => {
         const target = document.getElementById('requests');
         if (!state.requests.length) { target.className = 'empty'; target.textContent = 'No requests yet.'; return; }
         target.className = '';
-        target.innerHTML = `<table><thead><tr><th>Reference</th><th>Title</th><th>Priority</th><th>Status</th></tr></thead><tbody>${state.requests.map(r => `<tr><td>${r.reference || r.id}</td><td>${r.title || ''}</td><td>${r.priority || 'normal'}</td><td><span class="pill">${r.status}</span></td></tr>`).join('')}</tbody></table>`;
+        target.innerHTML = `<table><thead><tr><th>Reference</th><th>Title</th><th>Priority</th><th>Status</th>${isStaff() ? '<th>Actions</th>' : ''}</tr></thead><tbody>${state.requests.map(r => `<tr><td>${escapeHtml(r.reference || r.id)}</td><td>${escapeHtml(r.title || '')}</td><td>${escapeHtml(r.priority || 'normal')}</td><td><span class="pill">${escapeHtml(r.status)}</span></td>${isStaff() ? `<td>${requestActions(r)}</td>` : ''}</tr>`).join('')}</tbody></table>`;
+      };
+      const nextWorkorderStatus = (status) => ({ assigned: 'acknowledged', acknowledged: 'en_route', en_route: 'on_scene', on_scene: 'working', working: 'pending_inspection', pending_inspection: 'completed' }[status] || '');
+      const workorderActions = (workorder) => {
+        const actions = [];
+        if (workorder.status === 'unassigned' && can('workorder.self_assign')) actions.push(actionButton('workorder.selfAssign', workorder.id, workorder.version, 'Self assign'));
+        const next = nextWorkorderStatus(workorder.status);
+        if (next && can('workorder.update.assigned')) actions.push(actionButton('workorder.transition', workorder.id, workorder.version, `Move to ${next.replace(/_/g, ' ')}`, next));
+        return actions.length ? `<div class="actions">${actions.join('')}</div>` : '<span class="muted">—</span>';
+      };
+      const renderWorkorders = () => {
+        const target = document.getElementById('workorders');
+        if (!state.workorders.length) { target.className = 'empty'; target.textContent = 'No work orders yet.'; return; }
+        target.className = '';
+        target.innerHTML = `<table><thead><tr><th>Reference</th><th>Template</th><th>Status</th><th>Assigned employee</th><th>Actions</th></tr></thead><tbody>${state.workorders.map(workorder => `<tr><td>${escapeHtml(workorder.reference || workorder.id)}</td><td>${escapeHtml(workorder.templateKey || '—')}</td><td><span class="pill">${escapeHtml(workorder.status)}</span></td><td>${escapeHtml(workorder.assignedEmployeeId || '—')}</td><td>${workorderActions(workorder)}</td></tr>`).join('')}</tbody></table>`;
+      };
+      const renderOperations = () => {
+        const section = document.getElementById('operations');
+        if (!isStaff()) { section.hidden = true; return; }
+        section.hidden = false;
+        renderWorkorders();
       };
       const catalogEntries = (catalog) => {
         if (Array.isArray(catalog)) return catalog.filter((service) => service && typeof service === 'object');
@@ -126,6 +175,12 @@
         if (mock) return load();
         nui('request.list', { page: 1, pageSize: 25 });
       };
+      const refreshWorkorders = () => {
+        if (!isStaff()) return;
+        if (mock) return renderWorkorders();
+        nui('workorder.list', { page: 1, pageSize: 50 });
+      };
+      const refreshAll = () => { refreshRequests(); refreshWorkorders(); };
       const applyMessage = (message) => {
         if (!message) return;
         if (message.type === 'civicos:open') {
@@ -144,6 +199,7 @@
           const error = apiErrorMessage(message.result);
           setError(error);
           if (message.operation === 'request.create') setFormStatus(`Request failed: ${error}`);
+          if (message.operation !== 'request.create') setFormStatus(`Action failed: ${error}`);
           return;
         }
         setError('');
@@ -159,9 +215,15 @@
           const catalog = catalogEntries(bootstrap.catalog);
           state.bootstrap = { ...bootstrap, catalog: catalog.length ? catalog : (state.bootstrap?.catalog || []) };
           renderServices();
+          if (isStaff()) refreshWorkorders();
         }
         if (message.operation === 'request.list') state.requests = message.result.data.items || [];
-        renderStats(); renderRequests();
+        if (message.operation === 'workorder.list') state.workorders = message.result.data?.items || [];
+        if (['request.transition', 'workorder.convert', 'workorder.selfAssign', 'workorder.transition'].includes(message.operation)) {
+          setFormStatus('Action completed');
+          refreshAll();
+        }
+        renderStats(); renderRequests(); renderWorkorders();
       };
       window.addEventListener('message', (event) => applyMessage(event.data));
       const load = async () => {
@@ -171,9 +233,29 @@
           state.requests = [{ id: 1, reference: '311-2026-000001', title: 'Demo request', priority: 'normal', status: 'submitted' }];
         } else { nui('bootstrap'); nui('request.list', { page: 1, pageSize: 25 }); }
         renderServices();
-        renderStats(); renderRequests();
+        renderStats(); renderRequests(); renderWorkorders();
       };
       document.getElementById('refresh').addEventListener('click', refreshRequests);
+      document.getElementById('workorders-refresh').addEventListener('click', refreshWorkorders);
+      const handleAction = (event) => {
+        const button = event.target.closest('button[data-operation]');
+        if (!button || mock) return;
+        button.disabled = true;
+        const operation = button.dataset.operation;
+        const id = Number(button.dataset.id);
+        const expectedVersion = Number(button.dataset.version);
+        if (operation === 'request.transition') {
+          nui(operation, { id, expectedVersion, targetStatus: button.dataset.targetStatus, reason: 'NUI staff action' });
+        } else if (operation === 'workorder.convert') {
+          nui(operation, { requestId: id, expectedVersion, serviceCode: button.dataset.serviceCode });
+        } else if (operation === 'workorder.selfAssign') {
+          nui(operation, { workorderId: id, expectedVersion });
+        } else if (operation === 'workorder.transition') {
+          nui(operation, { workorderId: id, expectedVersion, targetStatus: button.dataset.targetStatus, reason: 'NUI staff action' });
+        }
+      };
+      document.getElementById('requests').addEventListener('click', handleAction);
+      document.getElementById('workorders').addEventListener('click', handleAction);
       document.getElementById('close').addEventListener('click', () => {
         setVisible(false);
         if (!mock) fetch(`https://${resource}/civicos:close`, { method: 'POST', body: '{}' }).catch(() => undefined);

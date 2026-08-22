@@ -48,3 +48,17 @@ test("NUI stays hidden until an open message arrives", () => {
   assert.match(index, /document\.getElementById\('request-form'\)\.reset\(\)/);
   assert.match(index, /document\.addEventListener\('keydown'/);
 });
+
+test("staff NUI exposes server-authorized request and work-order actions", () => {
+  const index = read("web/dist/index.html");
+
+  assert.match(index, /id="operations"/);
+  assert.match(index, /request\.transition/);
+  assert.match(index, /workorder\.convert/);
+  assert.match(index, /workorder\.list/);
+  assert.match(index, /workorder\.selfAssign/);
+  assert.match(index, /workorder\.transition/);
+  assert.match(index, /data-version/);
+  assert.match(index, /request\.triage/);
+  assert.match(index, /workorder\.update\.assigned/);
+});

@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Dispatcher vertical-slice controls
+
+- Added a role-aware Operations section to the NUI for triaging, accepting, or
+  rejecting requests and converting accepted requests into work orders.
+- Added work-order listing, self-assignment, and guarded status-transition
+  buttons that forward the expected version to the server API.
+- Added regression coverage for the staff action surface.
+
 ### Health diagnostics config status
 
 - Fixed the health check to call the config validator with its declared dot
