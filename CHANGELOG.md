@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### NUI document display fix
+
+- Changed the closed HTML document surface from visibility-only hiding to
+  `display: none`, preventing FiveM from retaining a black full-screen layer.
+- Kept the document root and body display transitions covered by the NUI
+  lifecycle regression test.
+
 ### NUI surface visibility hardening
 
 - Hid the HTML surface itself while CivicOS is closed so FiveM cannot retain a
