@@ -28,5 +28,7 @@ test("NUI stays hidden until an open message arrives", () => {
   assert.match(index, /body\.civicos-visible\s*\{[^}]*display:\s*block/);
   assert.match(index, /message\.type === 'civicos:open'/);
   assert.match(index, /message\.type === 'civicos:close'/);
+  assert.match(index, /const renderServices = \(\) =>/);
+  assert.match(index, /message\.operation === 'bootstrap'[\s\S]*renderServices\(\)/);
   assert.match(index, /document\.addEventListener\('keydown'/);
 });

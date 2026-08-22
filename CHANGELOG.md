@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Citizen service catalog rendering
+
+- Re-rendered the Citizen service selector when the asynchronous bootstrap
+  response arrives, so configured services can be selected for new requests.
+- Added a safe empty-catalog placeholder and preserved an existing selection
+  when the catalog refreshes.
+- Added regression coverage for the bootstrap-to-service-selector lifecycle.
+
 ### NUI document display fix
 
 - Changed the closed HTML document surface from visibility-only hiding to
