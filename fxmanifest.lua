@@ -13,6 +13,7 @@ shared_scripts {
     "shared/constants.lua",
     "shared/enums.lua",
     "shared/errors.lua",
+    "server/core/result.lua",
     "shared/schemas.lua",
     "shared/locale.lua",
     "config/config.lua",
@@ -24,7 +25,6 @@ shared_scripts {
 }
 
 server_scripts {
-    "server/core/result.lua",
     "server/core/logger.lua",
     "server/adapters/framework/interface.lua",
     "server/adapters/framework/shared.lua",

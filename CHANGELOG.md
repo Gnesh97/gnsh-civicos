@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Client adapter startup fix
+
+- Loaded the shared result envelope before client target adapters so target
+  validation no longer crashes on a missing `CivicOS.Result` value.
+- Added a manifest/load-order regression test covering the shared and server
+  script blocks.
+
 ### Command-gated NUI visibility
 
 - Kept the CivicOS NUI hidden during resource startup instead of rendering it
