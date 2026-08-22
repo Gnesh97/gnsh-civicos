@@ -3,11 +3,40 @@ _G.CivicOS = CivicOS
 
 local TemplateService = { _validated = false }
 
+local function registry()
+    local templates = CivicOS.WorkOrderTemplates
+    if type(templates) == "table" and type(templates.get) == "function" and type(templates.list) == "function" then
+        return templates
+    end
+    if type(LoadResourceFile) ~= "function" or type(load) ~= "function" or type(GetCurrentResourceName) ~= "function" then
+        return nil
+    end
+    local readOk, source = pcall(LoadResourceFile, GetCurrentResourceName(), "config/workorder_templates.lua")
+    if not readOk or type(source) ~= "string" or source == "" then return nil end
+    local chunk = load(source, "@config/workorder_templates.lua", "t")
+    if type(chunk) ~= "function" then return nil end
+    local ok, result = pcall(chunk)
+    if not ok then return nil end
+    templates = CivicOS.WorkOrderTemplates
+    if type(templates) ~= "table" and type(result) == "table" then
+        templates = result
+        CivicOS.WorkOrderTemplates = templates
+    end
+    if type(templates) == "table" and type(templates.get) == "function" and type(templates.list) == "function" then
+        return templates
+    end
+    return nil
+end
+
 function TemplateService:start()
     if self._validated then return { ok = true, data = true } end
+    local templates = registry()
+    if not templates then
+        return CivicOS.Result.err("WORKORDER_TEMPLATE_REGISTRY_UNAVAILABLE", "Work-order template registry is unavailable.")
+    end
     for _, service in ipairs(CivicOS.ServiceCatalog and CivicOS.ServiceCatalog.list() or {}) do
         local templateKey = service.workOrderTemplate
-        local template = CivicOS.WorkOrderTemplates and CivicOS.WorkOrderTemplates.get(templateKey)
+        local template = templates.get(templateKey)
         if not template then
             return CivicOS.Result.err("WORKORDER_TEMPLATE_NOT_FOUND", "Service catalog references a missing work order template.", {
                 serviceCode = service.code,
@@ -15,7 +44,7 @@ function TemplateService:start()
             })
         end
     end
-    for _, template in ipairs(CivicOS.WorkOrderTemplates and CivicOS.WorkOrderTemplates.list() or {}) do
+    for _, template in ipairs(templates.list()) do
         if type(template.department) ~= "string" or type(template.actions) ~= "table" or type(template.checklist) ~= "table" then
             return CivicOS.Result.err("WORKORDER_TEMPLATE_INVALID", "Work order template is incomplete.", { key = template.key })
         end
@@ -34,7 +63,11 @@ function TemplateService:start()
 end
 
 function TemplateService:get(key)
-    local template = CivicOS.WorkOrderTemplates and CivicOS.WorkOrderTemplates.get(key)
+    local templates = registry()
+    if not templates then
+        return CivicOS.Result.err("WORKORDER_TEMPLATE_REGISTRY_UNAVAILABLE", "Work-order template registry is unavailable.")
+    end
+    local template = templates.get(key)
     if not template then
         return CivicOS.Result.err("WORKORDER_TEMPLATE_NOT_FOUND", "Work order template not found.", { key = key })
     end

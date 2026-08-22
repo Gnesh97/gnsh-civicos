@@ -29,3 +29,19 @@ for _, service in ipairs(CivicOS.ServiceCatalog.list()) do
 end
 
 print("Service catalog work-order templates: PASS")
+
+local templateFile = assert(io.open("config/workorder_templates.lua", "r"))
+local templateSource = templateFile:read("*a")
+templateFile:close()
+CivicOS.WorkOrderTemplates = nil
+_G.GetCurrentResourceName = function() return "gnsh-civicos" end
+_G.LoadResourceFile = function(_, path)
+    assert(path == "config/workorder_templates.lua")
+    return templateSource
+end
+
+local fallbackService = dofile("server/services/workorder_template_service.lua")
+local fallbackStarted = fallbackService:start()
+assert(fallbackStarted.ok, fallbackStarted.error and fallbackStarted.error.message or "fallback template loading failed")
+
+print("Server-side template fallback: PASS")

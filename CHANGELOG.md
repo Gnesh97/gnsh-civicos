@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Work-order template registry fallback
+
+- Added a server-side fallback loader for the template registry when the
+  resource runtime does not expose the manifest-loaded table.
+- Return a dedicated registry-unavailable error instead of misreporting every
+  service as a missing template.
+- Added regression coverage for manifest and fallback loading paths.
+
 ### Work-order template runtime loading
 
 - Loaded the work-order template catalog explicitly on the server before its
