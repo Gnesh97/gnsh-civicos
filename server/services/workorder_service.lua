@@ -8,6 +8,67 @@ local function errorResult(code, message, details)
     return CivicOS.Result.err(code, message, details)
 end
 
+local fallbackWorkOrderStatus = {
+    COMPLETED = "completed",
+    EN_ROUTE = "en_route",
+    ON_SCENE = "on_scene",
+    CLOSED = "closed",
+}
+
+local fallbackTransitions = {
+    created = { unassigned = true },
+    unassigned = { assigned = true, cancelled = true },
+    assigned = { acknowledged = true, declined = true, reassigned = true, cancelled = true },
+    acknowledged = { en_route = true, on_hold = true, reassigned = true },
+    en_route = { on_scene = true, on_hold = true, reassigned = true },
+    on_scene = { working = true, blocked = true, on_hold = true },
+    working = { pending_inspection = true, completed = true, blocked = true, failed = true },
+    pending_inspection = { completed = true, rework_required = true },
+    rework_required = { working = true },
+    completed = { closed = true },
+    blocked = { working = true, on_hold = true, cancelled = true },
+    declined = { reassigned = true, cancelled = true },
+    reassigned = { acknowledged = true, cancelled = true },
+    on_hold = { acknowledged = true, en_route = true, working = true, cancelled = true },
+    failed = { working = true, cancelled = true },
+    closed = {},
+    cancelled = {},
+}
+
+local function workOrderStatuses()
+    local enums = CivicOS.Enums and CivicOS.Enums.WorkOrderStatus
+    return type(enums) == "table" and enums or fallbackWorkOrderStatus
+end
+
+local function workOrderStateMachine()
+    local existing = CivicOS.WorkOrderStateMachine
+    if type(existing) == "table" and type(existing.transition) == "function" then return existing end
+
+    local fallback = { transitions = fallbackTransitions }
+    function fallback.transition(entity, targetStatus, context)
+        local allowed = entity and fallback.transitions[entity.status]
+        if not allowed or allowed[targetStatus] ~= true then
+            return errorResult("WORKORDER_INVALID_STATE", "Work order transition is not allowed.", {
+                from = entity and entity.status,
+                to = targetStatus,
+            })
+        end
+        if targetStatus == "completed" and context and context.inspectionRequired and not context.inspectionPassed then
+            return errorResult("WORKORDER_INSPECTION_REQUIRED", "Inspection must pass before completion.")
+        end
+        if targetStatus == "working" and context and context.dependenciesUnresolved then
+            return errorResult("WORKORDER_DEPENDENCY_BLOCKED", "A dependency is not resolved.")
+        end
+        return { ok = true, data = { from = entity.status, to = targetStatus, reason = context and context.reason } }
+    end
+
+    CivicOS.WorkOrderStateMachine = fallback
+    if CivicOS.Logger and type(CivicOS.Logger.warn) == "function" then
+        CivicOS.Logger.warn("CORE", "Work-order state machine module was unavailable; using runtime fallback.")
+    end
+    return fallback
+end
+
 local function reference()
     referenceCounter = (referenceCounter + 1) % 1000000
     return string.format("WO-%s-%06d", os.date("!%Y"), (os.time() + referenceCounter) % 1000000)
@@ -252,7 +313,8 @@ function WorkOrderService:transition(source, id, expectedVersion, targetStatus, 
     if not auth.ok then auth = CivicOS.Authorization:can(source, "workorder.read.department", { departmentId = entity.department_id }) end
     if not auth.ok then return auth end
     if tonumber(expectedVersion) ~= tonumber(entity.version) then return errorResult("CORE_VERSION_CONFLICT", "Work order version conflict.") end
-    if targetStatus == CivicOS.Enums.WorkOrderStatus.COMPLETED and CivicOS.ChecklistService then
+    local statuses = workOrderStatuses()
+    if targetStatus == statuses.COMPLETED and CivicOS.ChecklistService then
         local checklist = CivicOS.ChecklistService:validateCompletion(source, entity)
         if not checklist.ok then return checklist end
     end
@@ -266,7 +328,7 @@ function WorkOrderService:transition(source, id, expectedVersion, targetStatus, 
         if not inspection.ok then return inspection end
         inspectionPassed = inspection.data == true
     end
-    local transition = CivicOS.WorkOrderStateMachine.transition(entity, targetStatus, {
+    local transition = workOrderStateMachine().transition(entity, targetStatus, {
         reason = reason,
         dependenciesUnresolved = dependencies and dependencies.ok and dependencies.data or false,
         inspectionRequired = inspectionRequired,
@@ -278,9 +340,9 @@ function WorkOrderService:transition(source, id, expectedVersion, targetStatus, 
     local synced = self:syncRequestState(entity.request_id, auth.data.identity.persistentIdentifier, reason)
     if not synced.ok then return synced end
     if entity.request_id and CivicOS.SlaService then
-        if targetStatus == CivicOS.Enums.WorkOrderStatus.EN_ROUTE or targetStatus == CivicOS.Enums.WorkOrderStatus.ON_SCENE then
+        if targetStatus == statuses.EN_ROUTE or targetStatus == statuses.ON_SCENE then
             CivicOS.SlaService:markMilestone(entity.request_id, "arrival", auth.data.identity.persistentIdentifier)
-        elseif targetStatus == CivicOS.Enums.WorkOrderStatus.COMPLETED or targetStatus == CivicOS.Enums.WorkOrderStatus.CLOSED then
+        elseif targetStatus == statuses.COMPLETED or targetStatus == statuses.CLOSED then
             CivicOS.SlaService:markMilestone(entity.request_id, "resolution", auth.data.identity.persistentIdentifier)
         end
     end

@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Work-order transition runtime fallback
+
+- Added a runtime state-machine fallback for deployments where the manifest
+  cache has not yet loaded the work-order state module.
+- Kept status checks safe when the shared work-order enum table is unavailable,
+  allowing `acknowledged` and later transitions to return a normal API result.
+
 ### Work-order transition state machine loading
 
 - Loaded the work-order state machine in the server manifest so self-assignment
