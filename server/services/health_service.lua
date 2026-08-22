@@ -17,7 +17,7 @@ function HealthService:check(source, detailed)
         local auth = CivicOS.Authorization:can(source, "system.config.manage", {})
         if not auth.ok then return auth end
     end
-    local config = CivicOS.Validation:config(CivicOS.Config)
+    local config = CivicOS.Validation.config(CivicOS.Config)
     local db = CivicOS.DatabaseAdapter and CivicOS.DatabaseAdapter:health()
     local migration = CivicOS.Migrations and CivicOS.Migrations:currentVersion()
     local result = {

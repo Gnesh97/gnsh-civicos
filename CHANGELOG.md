@@ -5,6 +5,12 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Health diagnostics config status
+
+- Fixed the health check to call the config validator with its declared dot
+  contract, so valid provider, duty mode, and locale settings report `healthy`.
+- Added a regression test for the diagnostics config validation path.
+
 ### QBCore administrator permissions
 
 - Mapped QBCore `god` and `admin` permissions to the CivicOS
