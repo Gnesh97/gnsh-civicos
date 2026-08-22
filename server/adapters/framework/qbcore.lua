@@ -8,13 +8,21 @@ local callbacks = Shared.callbacks()
 local QBCore
 local internalDuty = {}
 
+local function resource()
+    if type(exports) == "table" and exports["qb-core"] then
+        return exports["qb-core"]
+    end
+    return nil
+end
+
 local function core()
     if QBCore then
         return QBCore
     end
-    if type(exports) == "table" and exports["qb-core"] and type(exports["qb-core"].GetCoreObject) == "function" then
-        local ok, value = pcall(exports["qb-core"].GetCoreObject, exports["qb-core"])
-        if ok then
+    local qb = resource()
+    if qb and type(qb.GetCoreObject) == "function" then
+        local ok, value = pcall(qb.GetCoreObject)
+        if ok and type(value) == "table" and type(value.Functions) == "table" then
             QBCore = value
         end
     end
@@ -22,9 +30,20 @@ local function core()
 end
 
 local function player(source)
+    local normalizedSource = tonumber(source) or source
+    local qb = resource()
+    if qb and type(qb.GetPlayer) == "function" then
+        local ok, value = pcall(qb.GetPlayer, normalizedSource)
+        if ok and value then
+            return value
+        end
+    end
     local framework = core()
     if framework and framework.Functions and type(framework.Functions.GetPlayer) == "function" then
-        return framework.Functions.GetPlayer(source)
+        local ok, value = pcall(framework.Functions.GetPlayer, normalizedSource)
+        if ok then
+            return value
+        end
     end
     return nil
 end

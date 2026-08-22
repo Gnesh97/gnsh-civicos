@@ -5,6 +5,15 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### QBCore player lookup
+
+- Fixed the QBCore `GetCoreObject` export call so it is invoked without an
+  export self argument, allowing the adapter to receive the real framework
+  object and resolve loaded players.
+- Added direct `GetPlayer` export support, numeric source normalization, and
+  protected framework calls so `/civicos` requests work after player load.
+- Added a regression test for the QBCore player lookup contract.
+
 ### NUI API operation forwarding
 
 - Fixed the NUI callback invoking the dot-based API call helper with colon
