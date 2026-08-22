@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Diagnostics command output
+
+- Made `/civicos_diagnostics` serialize health data safely even when provider
+  values contain unsupported runtime types.
+- Displayed the diagnostics payload in the invoking player's chat and F8
+  console while retaining server-console output.
+- Added server and client regression coverage for the command response path.
+
 ### QBCore export binding
 
 - Matched FiveM QBCore export calls to the bound colon-call contract used by

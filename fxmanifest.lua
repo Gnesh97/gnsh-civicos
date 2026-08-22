@@ -122,6 +122,7 @@ client_scripts {
     "client/adapters/target/ox_target.lua",
     "client/adapters/target/registry.lua",
     "client/nui.lua",
+    "client/diagnostics.lua",
     "client/field_actions.lua",
     "client/routes.lua",
     "client/interactions.lua",
