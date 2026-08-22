@@ -79,10 +79,19 @@
         target.className = '';
         target.innerHTML = `<table><thead><tr><th>Reference</th><th>Title</th><th>Priority</th><th>Status</th></tr></thead><tbody>${state.requests.map(r => `<tr><td>${r.reference || r.id}</td><td>${r.title || ''}</td><td>${r.priority || 'normal'}</td><td><span class="pill">${r.status}</span></td></tr>`).join('')}</tbody></table>`;
       };
+      const catalogEntries = (catalog) => {
+        if (Array.isArray(catalog)) return catalog.filter((service) => service && typeof service === 'object');
+        if (!catalog || typeof catalog !== 'object') return [];
+        return Object.keys(catalog)
+          .filter((key) => /^\d+$/.test(key))
+          .sort((left, right) => Number(left) - Number(right))
+          .map((key) => catalog[key])
+          .filter((service) => service && typeof service === 'object');
+      };
       const renderServices = () => {
         const select = document.getElementById('service');
         const selected = select.value;
-        const services = Array.isArray(state.bootstrap?.catalog) ? state.bootstrap.catalog : [];
+        const services = catalogEntries(state.bootstrap?.catalog);
         select.replaceChildren();
         for (const service of services) {
           const option = document.createElement('option');
@@ -103,11 +112,22 @@
       };
       const applyMessage = (message) => {
         if (!message) return;
-        if (message.type === 'civicos:open') { setVisible(true); return; }
+        if (message.type === 'civicos:open') {
+          const catalog = catalogEntries(message.payload?.catalog);
+          if (catalog.length) {
+            state.bootstrap = { ...(state.bootstrap || {}), catalog };
+            renderServices();
+            renderStats();
+          }
+          setVisible(true);
+          return;
+        }
         if (message.type === 'civicos:close') { setVisible(false); return; }
         if (message.type !== 'civicos:api:result' || !message.result?.ok) return;
         if (message.operation === 'bootstrap') {
-          state.bootstrap = message.result.data;
+          const bootstrap = message.result.data || {};
+          const catalog = catalogEntries(bootstrap.catalog);
+          state.bootstrap = { ...bootstrap, catalog: catalog.length ? catalog : (state.bootstrap?.catalog || []) };
           renderServices();
         }
         if (message.operation === 'request.list') state.requests = message.result.data.items || [];

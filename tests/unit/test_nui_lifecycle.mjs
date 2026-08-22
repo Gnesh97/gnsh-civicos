@@ -12,12 +12,14 @@ test("CivicOS opens from the player command and closes through NUI", () => {
   assert.match(clientNui, /local NUI = \{/);
   assert.match(clientNui, /open = false/);
   assert.match(clientNui, /RegisterCommand\("civicos"/);
-  assert.match(clientNui, /NUI:openView\("home"\)/);
+  assert.match(clientNui, /NUI:openView\("home"/);
   assert.match(clientNui, /NUI:closeView\(\)/);
   assert.match(clientNui, /CivicOS\.NUI = NUI[\s\S]*NUI:closeView\(\)/);
   assert.match(clientNui, /local function jsonSafe\(value\)/);
   assert.match(clientNui, /local function send\(message\)/);
   assert.match(clientNui, /SendNUIMessage\(jsonSafe\(message\)\)/);
+  assert.match(clientNui, /local function catalogPayload\(\)/);
+  assert.match(clientNui, /NUI:openView\("home", \{ catalog = catalogPayload\(\) \}\)/);
 });
 
 test("NUI stays hidden until an open message arrives", () => {
@@ -32,6 +34,10 @@ test("NUI stays hidden until an open message arrives", () => {
   assert.match(index, /message\.type === 'civicos:open'/);
   assert.match(index, /message\.type === 'civicos:close'/);
   assert.match(index, /const renderServices = \(\) =>/);
+  assert.match(index, /const catalogEntries = \(catalog\) =>/);
+  assert.match(index, /catalogEntries\(bootstrap\.catalog\)/);
+  assert.match(index, /catalogEntries\(message\.payload\?\.catalog\)/);
+  assert.match(index, /catalog\.length \? catalog : \(state\.bootstrap\?\.catalog \|\| \[\]\)/);
   assert.match(index, /message\.operation === 'bootstrap'[\s\S]*renderServices\(\)/);
   assert.match(index, /document\.addEventListener\('keydown'/);
 });

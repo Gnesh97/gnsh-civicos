@@ -54,6 +54,14 @@ local function send(message)
     if type(SendNUIMessage) == "function" then SendNUIMessage(jsonSafe(message)) end
 end
 
+local function catalogPayload()
+    local result = {}
+    for _, entry in ipairs(CivicOS.ServiceCatalog and CivicOS.ServiceCatalog.list() or {}) do
+        result[#result + 1] = { code = entry.code, label = entry.label }
+    end
+    return result
+end
+
 local function nextId()
     NUI.sequence = (NUI.sequence + 1) % 2147483647
     return string.format("nui-%s-%d", GetGameTimer and GetGameTimer() or os.time(), NUI.sequence)
@@ -102,7 +110,7 @@ end
 
 if type(RegisterCommand) == "function" then
     RegisterCommand("civicos", function()
-        if NUI.open then NUI:closeView() else NUI:openView("home") end
+        if NUI.open then NUI:closeView() else NUI:openView("home", { catalog = catalogPayload() }) end
     end, false)
 end
 

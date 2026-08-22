@@ -5,6 +5,22 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Client catalog fallback
+
+- Sent a JSON-safe service catalog with the `/civicos` open message from the
+  shared resource configuration.
+- Kept that catalog when an empty or transport-shaped bootstrap response arrives,
+  so the request form remains selectable while the server response loads.
+- Added Lua and lifecycle coverage for the open-message catalog fallback.
+
+### Catalog array compatibility
+
+- Normalized numeric-keyed catalog objects as well as native arrays before
+  rendering the Citizen service selector.
+- Kept the selector and service count populated after FiveM transport shape
+  conversions.
+- Added NUI regression coverage for catalog normalization.
+
 ### Client-side NUI JSON guard
 
 - Sanitized every `SendNUIMessage` payload on the client as a second boundary
