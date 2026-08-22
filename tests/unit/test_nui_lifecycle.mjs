@@ -21,6 +21,9 @@ test("NUI stays hidden until an open message arrives", () => {
   const index = read("web/dist/index.html");
 
   assert.match(index, /:root\s*\{[^}]*background:\s*transparent/);
+  assert.match(index, /html\s*\{[^}]*visibility:\s*hidden/);
+  assert.match(index, /html\.civicos-visible\s*\{[^}]*visibility:\s*visible/);
+  assert.match(index, /document\.documentElement\.classList\.toggle\('civicos-visible'/);
   assert.match(index, /body\s*\{[^}]*display:\s*none/);
   assert.match(index, /body\.civicos-visible\s*\{[^}]*display:\s*block/);
   assert.match(index, /message\.type === 'civicos:open'/);

@@ -5,6 +5,14 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### NUI surface visibility hardening
+
+- Hid the HTML surface itself while CivicOS is closed so FiveM cannot retain a
+  black full-screen NUI layer behind the game HUD.
+- Applied the visible class to both the document root and body only after an
+  explicit open message.
+- Added regression coverage for the HTML visibility transition.
+
 ### NUI overlay teardown
 
 - Made the closed NUI document transparent at the HTML root so it cannot
