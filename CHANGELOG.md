@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Framework callback contract
+
+- Fixed framework adapter callbacks being registered with the adapter table as
+  their callback, which caused QBCore job-update errors during server startup.
+- Aligned internal framework calls with the adapter's dot-based contract and
+  added a regression test covering all lifecycle callback registrations.
+
 ### Human-readable service labels
 
 - Converted `service.*` catalog keys to readable title-case labels in the NUI

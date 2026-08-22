@@ -59,7 +59,7 @@ function Registry:initialize()
     self.selected = adapter
     self.initialized = true
     CivicOS.Framework = adapter
-    CivicOS.FrameworkCapabilities = adapter:getCapabilities()
+    CivicOS.FrameworkCapabilities = adapter.getCapabilities()
     if CivicOS.Logger then
         CivicOS.Logger.info("CORE", "Framework adapter selected.", { provider = provider, capabilities = CivicOS.FrameworkCapabilities })
     end

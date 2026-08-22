@@ -18,10 +18,10 @@ function Identity:resolve(source)
     if cached then
         return { ok = true, data = cached, cached = true }
     end
-    if not CivicOS.Framework:isPlayerLoaded(source) then
+    if not CivicOS.Framework.isPlayerLoaded(source) then
         return errorResult("AUTH_PLAYER_NOT_LOADED", "Player is not loaded.", { source = source })
     end
-    local identity = CivicOS.Framework:getPlayer(source)
+    local identity = CivicOS.Framework.getPlayer(source)
     if type(identity) ~= "table" or not identity.persistentIdentifier then
         return errorResult("AUTH_IDENTITY_UNAVAILABLE", "Player identity is unavailable.", { source = source })
     end
@@ -49,16 +49,16 @@ function Identity:start()
         return
     end
     self._started = true
-    CivicOS.Framework:onPlayerLoaded(function(identity)
+    CivicOS.Framework.onPlayerLoaded(function(identity)
         self._cache[identity.source] = identity
     end)
-    CivicOS.Framework:onPlayerUnloaded(function(source)
+    CivicOS.Framework.onPlayerUnloaded(function(source)
         self:clear(source)
     end)
-    CivicOS.Framework:onJobChanged(function(identity)
+    CivicOS.Framework.onJobChanged(function(identity)
         self._cache[identity.source] = identity
     end)
-    CivicOS.Framework:onDutyChanged(function(identity)
+    CivicOS.Framework.onDutyChanged(function(identity)
         self._cache[identity.source] = identity
     end)
 end

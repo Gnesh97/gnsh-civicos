@@ -94,8 +94,8 @@ end
 function DisconnectService:start()
     if self._started or not CivicOS.Framework then return end
     self._started = true
-    CivicOS.Framework:onPlayerLoaded(function(identity) self:onLoaded(identity) end)
-    CivicOS.Framework:onPlayerUnloaded(function(source) self:onUnloaded(source) end)
+    CivicOS.Framework.onPlayerLoaded(function(identity) self:onLoaded(identity) end)
+    CivicOS.Framework.onPlayerUnloaded(function(source) self:onUnloaded(source) end)
 end
 
 CivicOS.DisconnectService = DisconnectService

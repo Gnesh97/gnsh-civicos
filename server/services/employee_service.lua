@@ -92,13 +92,13 @@ end
 function EmployeeService:start()
     if self._started or not CivicOS.Framework then return end
     self._started = true
-    CivicOS.Framework:onPlayerLoaded(function(identity)
+    CivicOS.Framework.onPlayerLoaded(function(identity)
         self:sync(identity.source)
     end)
-    CivicOS.Framework:onJobChanged(function(identity)
+    CivicOS.Framework.onJobChanged(function(identity)
         self:sync(identity.source)
     end)
-    CivicOS.Framework:onDutyChanged(function(identity)
+    CivicOS.Framework.onDutyChanged(function(identity)
         self:sync(identity.source)
     end)
 end

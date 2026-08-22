@@ -145,7 +145,7 @@ end
 function CrewService:start()
     if self._started or not CivicOS.Framework then return end
     self._started = true
-    CivicOS.Framework:onPlayerUnloaded(function(identityOrSource)
+    CivicOS.Framework.onPlayerUnloaded(function(identityOrSource)
         local identifier = type(identityOrSource) == "table" and identityOrSource.persistentIdentifier
         if not identifier and tonumber(identityOrSource) and CivicOS.DisconnectService then
             local session = CivicOS.DisconnectService._sessions[tonumber(identityOrSource)]
