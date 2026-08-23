@@ -3,81 +3,268 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
     <title>CivicOS Operations</title>
     <style>
-      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: transparent; color: #eef4fb; }
+      /* Civic Ledger visual system: Swiss grid + restrained liquid glass. */
+      :root {
+        font-family: 'IBM Plex Sans', 'Hanken Grotesk', 'Barlow', 'Host Grotesk', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+        color: #f2f4f7;
+        background: transparent !important;
+        --page: #0b0e13;
+        --surface: rgba(22, 28, 37, .72);
+        --surface-strong: rgba(28, 35, 46, .9);
+        --ink: #f2f4f7;
+        --ink-dim: rgba(242, 244, 247, .68);
+        --ink-muted: rgba(242, 244, 247, .42);
+        --line: rgba(242, 244, 247, .12);
+        --line-strong: rgba(242, 244, 247, .22);
+        --accent: #8ca9ff;
+        --accent-strong: #6d8dff;
+        --accent-wash: rgba(140, 169, 255, .14);
+        --danger: #ffb1b1;
+        --shadow: 0 24px 80px rgba(0, 0, 0, .34);
+        --radius: 14px;
+      }
       * { box-sizing: border-box; }
+      /* Remove the CEF surface itself while the NUI is closed. */
       html { display: none; background: transparent !important; }
-      html.civicos-visible { display: block; }
-      body { display: none; margin: 0; min-height: 100vh; background: transparent; }
-      body.civicos-visible { display: block; background: radial-gradient(circle at 20% 0%, #1e3447, transparent 45%), #10151d; }
-      #root { max-width: 1180px; margin: 0 auto; padding: 28px; }
-      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+      html.civicos-visible { display: block; background: transparent !important; }
+      body { display: none; min-height: 100vh; margin: 0; background: transparent !important; visibility: hidden; opacity: 0; pointer-events: none; }
+      body.civicos-visible {
+        display: block;
+        overflow-x: auto;
+        color: var(--ink);
+        background: var(--page) !important;
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
+      }
+      body:not(.civicos-visible) #root { display: none !important; }
+      body.civicos-visible::after {
+        position: fixed;
+        top: 0;
+        left: 9vw;
+        width: 1px;
+        height: 100vh;
+        pointer-events: none;
+        content: '';
+        background: linear-gradient(to bottom, rgba(140, 169, 255, .64), transparent 45%);
+        opacity: .52;
+      }
       h1, h2, p { margin: 0; }
-      h1 { letter-spacing: .02em; }
-      .muted { color: #9aabba; font-size: 13px; }
-      button { border: 0; border-radius: 8px; background: #3e9ade; color: white; padding: 10px 14px; font-weight: 700; cursor: pointer; }
-      button.secondary { background: #263645; }
-      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-      .card { border: 1px solid #2a3b4c; border-radius: 12px; background: rgba(22, 31, 42, .92); padding: 18px; box-shadow: 0 16px 40px rgba(0,0,0,.18); }
-      .stat { font-size: 28px; font-weight: 800; margin-top: 8px; }
-      .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 20px 0 12px; }
-      .actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-      button.small { padding: 6px 9px; font-size: 11px; }
-      button:disabled { cursor: wait; opacity: .6; }
-      input, select, textarea { width: 100%; border: 1px solid #324658; border-radius: 8px; background: #17232f; color: inherit; padding: 10px; }
-      textarea { min-height: 88px; resize: vertical; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { border-bottom: 1px solid #263645; padding: 12px 8px; text-align: left; font-size: 13px; }
-      th { color: #9aabba; font-weight: 600; }
-      .pill { display: inline-flex; border-radius: 999px; background: #253b4d; color: #8fd1ff; padding: 4px 8px; font-size: 11px; font-weight: 700; }
-      .error { color: #ff9f9f; margin-top: 12px; }
-      .empty { color: #9aabba; padding: 20px 0; }
-      @media (max-width: 600px) { #root { padding: 16px; } header { align-items: flex-start; flex-direction: column; } }
+      h1, h2 { font-weight: 400; letter-spacing: -.025em; text-wrap: balance; }
+      h1 { font-size: clamp(1.32rem, 2vw, 1.7rem); line-height: 1; }
+      h2 { font-size: clamp(1.14rem, 1.6vw, 1.38rem); line-height: 1.15; }
+      .muted { color: var(--ink-dim); font-size: .79rem; line-height: 1.55; }
+      .grid { display: grid; }
+      button, input, select, textarea { font: inherit; }
+      button {
+        min-height: 44px;
+        min-width: 44px;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        padding: 10px 16px;
+        background: var(--accent);
+        color: #10131a;
+        font-size: .82rem;
+        font-weight: 600;
+        letter-spacing: .01em;
+        cursor: pointer;
+        transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, color 180ms ease;
+      }
+      button:hover { background: #b4c5ff; transform: translateY(-1px); }
+      button:active { transform: translateY(0); }
+      button.secondary { border-color: var(--line-strong); background: rgba(255, 255, 255, .045); color: var(--ink); backdrop-filter: blur(18px) saturate(130%); }
+      button.secondary:hover { border-color: rgba(140, 169, 255, .5); background: var(--accent-wash); }
+      button:disabled { cursor: wait; opacity: .58; transform: none; box-shadow: none; }
+      button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+      #root {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1.6fr) minmax(280px, .8fr);
+        gap: 16px;
+        width: min(100%, 1440px);
+        /* FiveM is a desktop NUI: keep the two-column workbench intact and
+           let unusually narrow debug windows scroll horizontally. */
+        min-width: 1040px;
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: clamp(22px, 4vw, 58px) clamp(18px, 5vw, 72px) 72px;
+        isolation: isolate;
+      }
+      #root::before { position: absolute; top: 0; left: clamp(18px, 5vw, 72px); right: clamp(18px, 5vw, 72px); height: 1px; content: ''; background: linear-gradient(90deg, var(--accent), rgba(140, 169, 255, 0) 70%); opacity: .7; }
+      body.civicos-visible #root { animation: shell-in 560ms cubic-bezier(.22, 1, .36, 1) both; }
+      header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 64px; margin: 0 0 10px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+      header > div:first-child { display: flex; align-items: center; gap: 14px; min-width: 0; }
+      header > div:first-child::before { display: block; width: 30px; height: 30px; content: ''; border: 1px solid rgba(140, 169, 255, .6); background: linear-gradient(to top, var(--accent) 0 28%, transparent 28% 37%, var(--accent) 37% 64%, transparent 64% 73%, var(--accent) 73%); box-shadow: inset 0 0 16px rgba(255, 255, 255, .06); }
+      header > div:first-child .muted { margin-top: 5px; }
+      header > button { display: inline-flex; align-items: center; justify-content: center; order: 3; }
+      header::after { align-self: flex-start; order: 2; min-height: 34px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255, 255, 255, .035); color: var(--ink-dim); content: 'CIVIC / NUI'; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; backdrop-filter: blur(18px) saturate(125%); }
+      #stats { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: 100%; margin: 0 0 10px; }
+      .card { position: relative; min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(145deg, rgba(31, 38, 49, .78), rgba(16, 21, 29, .78)); box-shadow: var(--shadow); backdrop-filter: blur(26px) saturate(125%); }
+      .card::before { position: absolute; top: 0; right: 18px; left: 18px; height: 1px; content: ''; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .2), transparent); opacity: .65; }
+      #stats .card { padding: 18px 20px 20px; box-shadow: none; background: rgba(20, 26, 34, .62); }
+      #stats .card::after { position: absolute; right: 20px; bottom: 20px; width: 30px; height: 1px; content: ''; background: var(--accent); opacity: .6; }
+      #stats .muted { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; }
+      .stat { margin-top: 10px; color: var(--ink); font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: clamp(1.35rem, 3vw, 2.2rem); font-weight: 400; letter-spacing: -.05em; line-height: 1; font-variant-numeric: tabular-nums; }
+      .requests-panel { grid-column: 1; grid-row: 3; min-height: 360px; padding: clamp(20px, 3vw, 30px); }
+      .composer-panel { grid-column: 2; grid-row: 3; padding: clamp(20px, 3vw, 30px); }
+      .operations-panel { grid-column: 1 / -1; grid-row: 4; padding: clamp(20px, 3vw, 30px); }
+      .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 18px; }
+      .toolbar h2 { flex: 1; min-width: 160px; }
+      .toolbar h2[style] { flex: 1 !important; }
+      .toolbar::before { width: 18px; height: 1px; content: ''; background: var(--accent); }
+      .toolbar > h2 { order: 2; }
+      .toolbar > button { order: 3; }
+      .toolbar > h2 + button { margin-left: auto; }
+      .card > .toolbar:first-child::before { display: none; }
+      .card > .toolbar:first-child::after { align-self: center; width: 18px; height: 1px; content: ''; background: var(--accent); order: 1; }
+      .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      button.small { min-height: 44px; padding: 7px 11px; border-radius: 8px; font-size: .7rem; }
+      input, select, textarea { min-height: 46px; border: 1px solid var(--line-strong); border-radius: 9px; padding: 11px 12px; background: rgba(7, 10, 15, .35); color: var(--ink); font-size: .83rem; line-height: 1.4; transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
+      input:hover, select:hover, textarea:hover { border-color: rgba(140, 169, 255, .42); }
+      input:focus, select:focus, textarea:focus { border-color: var(--accent); background: rgba(7, 10, 15, .55); outline: none; }
+      input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+      form { display: flex; flex-direction: column; gap: 16px; }
+      form label { display: flex; flex-direction: column; gap: 7px; color: var(--ink-dim); font-size: .75rem; }
+      textarea { min-height: 132px; resize: vertical; }
+      form .toolbar { align-items: center; justify-content: flex-start; padding-top: 4px; }
+      form .toolbar::before { display: none; }
+      table { width: 100%; min-width: 580px; border-collapse: collapse; }
+      th, td { padding: 13px 10px; border-bottom: 1px solid var(--line); text-align: left; font-size: .78rem; vertical-align: middle; }
+      th { color: var(--ink-muted); font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .62rem; font-weight: 400; letter-spacing: .1em; text-transform: uppercase; }
+      td { color: var(--ink-dim); }
+      tbody tr { transition: background-color 180ms ease; }
+      tbody tr:hover { background: rgba(140, 169, 255, .05); }
+      td:first-child { color: var(--ink); font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .7rem; font-variant-numeric: tabular-nums; }
+      .pill { display: inline-flex; align-items: center; min-height: 25px; border: 1px solid rgba(140, 169, 255, .3); border-radius: 999px; padding: 4px 9px; background: var(--accent-wash); color: var(--accent); font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .63rem; letter-spacing: .03em; }
+      .error { margin: 0 0 14px; padding: 10px 12px; border: 1px solid rgba(255, 177, 177, .3); border-radius: 9px; background: rgba(255, 177, 177, .08); color: var(--danger); font-size: .78rem; line-height: 1.45; }
+      #error:empty { display: none; }
+      .empty { padding: 30px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--ink-muted); font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .72rem; }
+      #requests, #workorders { overflow-x: auto; }
+      #operations .muted { max-width: 60ch; margin-bottom: 18px !important; }
+      .workorder-stack { display: grid; gap: 10px; }
+      .workorder-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: center; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: rgba(7, 10, 15, .24); transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
+      .workorder-card:hover, .workorder-card.is-selected { border-color: rgba(140, 169, 255, .46); background: rgba(140, 169, 255, .06); box-shadow: inset 3px 0 0 var(--accent); }
+      .workorder-card-main { min-width: 0; }
+      .workorder-card-top, .workorder-card-meta, .workorder-card-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .workorder-card-top { margin-bottom: 7px; }
+      .workorder-reference, .workorder-version, .detail-kicker { color: var(--ink-muted); font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .63rem; letter-spacing: .08em; text-transform: uppercase; }
+      .workorder-card h3 { margin: 0 0 9px; color: var(--ink); font-size: .98rem; font-weight: 500; letter-spacing: -.01em; }
+      .workorder-card-meta { color: var(--ink-dim); font-size: .75rem; }
+      .workorder-card-meta span + span { padding-left: 10px; border-left: 1px solid var(--line); }
+      .workorder-card-actions { justify-content: flex-end; }
+      .workorder-card-actions .small { white-space: nowrap; }
+      .detail-workspace { margin-top: 18px; padding-top: 20px; border-top: 1px solid var(--line-strong); }
+      .detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+      .detail-header h3 { margin: 6px 0 0; color: var(--ink); font-size: 1.15rem; font-weight: 400; }
+      .detail-header .muted { margin: 5px 0 0 !important; }
+      .detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+      .detail-card { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: rgba(28, 35, 46, .54); }
+      .detail-card h4 { margin: 0 0 13px; color: var(--ink); font-size: .84rem; font-weight: 500; }
+      .detail-card .detail-card-subtitle { margin: -8px 0 13px; color: var(--ink-muted); font-size: .7rem; }
+      .detail-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+      .detail-list li { display: flex; align-items: flex-start; gap: 9px; min-height: 30px; color: var(--ink-dim); font-size: .76rem; line-height: 1.4; }
+      .detail-list input[type='checkbox'] { flex: 0 0 auto; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--accent-strong); }
+      .detail-list label { display: flex; gap: 9px; align-items: flex-start; cursor: pointer; }
+      .detail-list label.is-complete { color: var(--ink); }
+      .detail-empty { color: var(--ink-muted); font-size: .74rem; line-height: 1.5; }
+      .detail-actions { display: grid; gap: 8px; }
+      .detail-action-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+      .detail-action-row:last-child { padding-bottom: 0; border-bottom: 0; }
+      .detail-action-label { min-width: 0; color: var(--ink-dim); font-size: .75rem; }
+      .detail-action-label strong { display: block; color: var(--ink); font-weight: 500; }
+      .detail-action-label span { display: block; margin-top: 2px; color: var(--ink-muted); font-size: .66rem; }
+      .detail-action-row button { flex: 0 0 auto; }
+      .detail-inspection { display: grid; gap: 12px; }
+      .detail-inspection-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .detail-note { width: 100%; min-height: 74px; margin-top: 2px; resize: vertical; }
+      .detail-alert { margin: 0 0 14px; }
+      .detail-loading { color: var(--ink-muted); font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .72rem; }
+      .detail-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+      .detail-footer .muted { margin: 0 !important; }
+      .form-note { margin: -4px 0 0; color: var(--ink-muted); font-size: .7rem; line-height: 1.45; }
+      [hidden] { display: none !important; }
+      @keyframes shell-in { from { opacity: 0; transform: translateY(12px); filter: blur(6px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+      }
     </style>
   </head>
   <body>
+    <!--
+      THESIS: CivicOS is a service ledger, not a generic dashboard; the queue stays readable while actions stay close.
+      OWN-WORLD: Swiss grid, cobalt ink, tabular numerics, and a restrained liquid-glass layer for active controls.
+      STORY: A citizen sees requests; staff see the same queue with authorized operations; everyone knows current state first.
+      FIRST VIEWPORT: Identity rail, three role-aware measures, request queue, and new-request form share one desktop workbench.
+      FORM: Swiss service ledger, candidate 3 of grounded directions; seed d43d9f59.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
     <main id="root">
-      <header>
+      <header class="topbar">
         <div><h1>CivicOS</h1><p class="muted" id="subtitle">Municipal operations</p></div>
         <button class="secondary" id="close">Close</button>
       </header>
-      <section class="grid" id="stats"></section>
-      <section class="card" style="margin-top:16px">
-        <div class="toolbar"><h2 style="flex:1">Requests</h2><button id="refresh">Refresh</button></div>
-        <div id="error" class="error"></div>
+      <section class="grid stats-grid" id="stats" aria-label="CivicOS overview"></section>
+      <section class="card requests-panel" aria-labelledby="requests-heading">
+        <div class="toolbar"><h2 id="requests-heading" style="flex:1">Requests</h2><button id="refresh">Refresh</button></div>
+        <div id="error" class="error" aria-live="polite"></div>
         <div id="requests" class="empty">Loading…</div>
       </section>
-      <section class="card" style="margin-top:16px" id="operations" hidden>
-        <div class="toolbar"><h2 style="flex:1">Operations</h2><button class="secondary" id="workorders-refresh">Refresh work orders</button></div>
+      <section class="card operations-panel" id="operations" aria-labelledby="operations-heading" hidden>
+        <div class="toolbar"><h2 id="operations-heading" style="flex:1">Operations</h2><button class="secondary" id="workorders-refresh">Refresh work orders</button></div>
         <p class="muted" style="margin-bottom:12px">Staff actions are checked again by the server before they are applied.</p>
         <div id="workorders" class="empty">Loading…</div>
+        <div id="workorder-detail" class="detail-workspace" hidden aria-live="polite"></div>
       </section>
-      <section class="card" style="margin-top:16px">
-        <h2 style="margin-bottom:12px">New request</h2>
+      <section class="card composer-panel" aria-labelledby="new-request-heading">
+        <h2 id="new-request-heading" style="margin-bottom:12px">New request</h2>
         <form id="request-form">
           <label class="muted" for="service">Service</label><select id="service" required></select>
           <label class="muted" for="title">Title</label><input id="title" maxlength="120" required />
           <label class="muted" for="description">Description</label><textarea id="description" maxlength="4000" required></textarea>
-          <div class="toolbar"><button type="submit">Submit request</button><span class="muted" id="form-status"></span></div>
+          <p class="form-note">Your current in-game position is attached to the request for field routing.</p>
+          <div class="toolbar"><button type="submit">Submit request</button><span class="muted" id="form-status" aria-live="polite"></span></div>
         </form>
       </section>
     </main>
     <script>
-      const state = { bootstrap: null, requests: [], workorders: [], open: false };
+      const state = {
+        bootstrap: null,
+        requests: [],
+        workorders: [],
+        open: false,
+        selectedWorkorderId: null,
+        workorderDetails: {},
+      };
       const resource = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'gnsh-civicos';
       const mock = typeof GetParentResourceName !== 'function';
-      const nui = (operation, payload = {}) => fetch(`https://${resource}/civicos:api`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation, payload }) }).catch(() => ({ ok: false }));
+      let nuiSequence = 0;
+      const pendingNui = new Map();
+      const nui = (operation, payload = {}) => {
+        const requestId = `web-${Date.now()}-${nuiSequence++}`;
+        pendingNui.set(requestId, { operation, payload });
+        return fetch(`https://${resource}/civicos:api`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation, payload, requestId }) }).catch(() => ({ ok: false }));
+      };
       const setError = (message = '') => { document.getElementById('error').textContent = message; };
       const setFormStatus = (message = '') => { document.getElementById('form-status').textContent = message; };
       const apiErrorMessage = (result, fallback = 'The request could not be completed.') => {
         const error = result?.error || {};
+        const detailValue = (value) => {
+          if (Array.isArray(value)) return value.join(', ');
+          if (value && typeof value === 'object') return Object.entries(value).map(([key, item]) => `${key}:${detailValue(item)}`).join(', ');
+          return String(value);
+        };
         const details = error.details && typeof error.details === 'object'
-          ? Object.entries(error.details).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)).map(([key, value]) => `${key}=${value}`).join(', ')
+          ? Object.entries(error.details).map(([key, value]) => `${key}=${detailValue(value)}`).join(', ')
           : '';
         return [error.message || error.code || fallback, details ? `(${details})` : ''].filter(Boolean).join(' ');
       };
       const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+      const humanizeKey = (value) => String(value || '—').replace(/^service\./, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, (letter) => letter.toUpperCase()) || '—';
       const identityRole = () => state.bootstrap?.identity?.role || 'CITIZEN';
       const permissions = () => {
         const value = state.bootstrap?.permissions;
@@ -86,49 +273,150 @@
         return Object.keys(value).filter((key) => /^\d+$/.test(key)).sort((left, right) => Number(left) - Number(right)).map((key) => value[key]);
       };
       const can = (permission) => permissions().includes(permission) || identityRole() === 'SYSTEM_ADMIN';
-      const isStaff = () => ['DISPATCHER', 'SUPERVISOR', 'DEPARTMENT_ADMIN', 'SYSTEM_ADMIN'].includes(identityRole());
-      const actionButton = (operation, id, version, label, targetStatus = '', serviceCode = '') => `<button class="small" data-operation="${escapeHtml(operation)}" data-id="${Number(id) || 0}" data-version="${Number(version) || 0}" data-target-status="${escapeHtml(targetStatus)}" data-service-code="${escapeHtml(serviceCode)}">${escapeHtml(label)}</button>`;
+      const isStaff = () => ['TECHNICIAN', 'DISPATCHER', 'SUPERVISOR', 'DEPARTMENT_ADMIN', 'SYSTEM_ADMIN'].includes(identityRole());
+      const actionButton = ({ operation, id = 0, version = 0, label, targetStatus = '', serviceCode = '', actionKey = '', proofValue = '', notesFor = '', secondary = false, disabled = false }) => `<button class="small${secondary ? ' secondary' : ''}" data-operation="${escapeHtml(operation)}" data-id="${Number(id) || 0}" data-version="${Number(version) || 0}" data-target-status="${escapeHtml(targetStatus)}" data-service-code="${escapeHtml(serviceCode)}" data-action-key="${escapeHtml(actionKey)}" data-proof="${escapeHtml(proofValue)}" data-notes-for="${Number(notesFor) || 0}"${disabled ? ' disabled' : ''}>${escapeHtml(label)}</button>`;
       const setVisible = (visible) => {
-        state.open = visible;
-        document.documentElement.classList.toggle('civicos-visible', visible);
-        document.body.classList.toggle('civicos-visible', visible);
-        document.body.setAttribute('aria-hidden', String(!visible));
-        if (visible) load();
+        const nextVisible = Boolean(visible);
+        state.open = nextVisible;
+        document.documentElement.classList.toggle('civicos-visible', nextVisible);
+        document.body.classList.toggle('civicos-visible', nextVisible);
+        document.body.hidden = !nextVisible;
+        document.body.setAttribute('aria-hidden', String(!nextVisible));
+        if (nextVisible) load();
+      };
+      const objectValue = (value) => {
+        if (value && typeof value === 'object') return value;
+        if (typeof value === 'string') { try { const parsed = JSON.parse(value); return parsed && typeof parsed === 'object' ? parsed : {}; } catch (_) { return {}; } }
+        return {};
+      };
+      const workorderTemplate = (workorder) => objectValue(objectValue(workorder?.metadata).template);
+      const inspectionRequired = (workorder) => workorderTemplate(workorder).inspectionRequired === true;
+      const formatDuration = (milliseconds) => {
+        const seconds = Math.max(1, Math.round(Number(milliseconds || 0) / 1000));
+        return `${seconds}s field step`;
+      };
+      const getWorkorder = (id) => state.workorders.find((item) => Number(item.id) === Number(id));
+      const ensureDetail = (workorder) => {
+        if (!workorder) return null;
+        const id = Number(workorder.id);
+        const current = state.workorderDetails[id] || { workorderId: id, version: Number(workorder.version) || 0, checklist: null, actions: null, inspection: null, activeActions: {}, loading: false, error: '', inspectionUnavailable: false };
+        if (!state.workorderDetails[id]) state.workorderDetails[id] = current;
+        if (!current.mutating) current.version = Number(workorder.version) || current.version;
+        return current;
+      };
+      const setWorkorderVersion = (id, version, status = '') => {
+        const workorder = getWorkorder(id);
+        const detail = workorder ? ensureDetail(workorder) : state.workorderDetails[id];
+        if (detail && Number.isFinite(Number(version))) detail.version = Number(version);
+        if (workorder && Number.isFinite(Number(version))) workorder.version = Number(version);
+        if (workorder && status) workorder.status = status;
       };
       const renderStats = () => {
         const identity = state.bootstrap?.identity || { displayName: 'Citizen', role: 'CITIZEN' };
         document.getElementById('subtitle').textContent = `${identity.displayName} · ${identity.role}${identity.departmentName ? ` · ${identity.departmentName}` : ''}`;
-        document.getElementById('stats').innerHTML = `<div class="card"><span class="muted">Role</span><div class="stat">${identity.role}</div></div><div class="card"><span class="muted">Open requests</span><div class="stat">${state.requests.filter(r => !['closed','cancelled'].includes(r.status)).length}</div></div><div class="card"><span class="muted">Services</span><div class="stat">${state.bootstrap?.catalog?.length || 0}</div></div>`;
+        document.getElementById('stats').innerHTML = `<div class="card"><span class="muted">Role</span><div class="stat">${escapeHtml(identity.role)}</div></div><div class="card"><span class="muted">Open requests</span><div class="stat">${state.requests.filter((request) => !['closed', 'cancelled'].includes(request.status)).length}</div></div><div class="card"><span class="muted">Services</span><div class="stat">${state.bootstrap?.catalog?.length || 0}</div></div>`;
         renderOperations();
       };
       const requestActions = (request) => {
         if (!isStaff()) return '<span class="muted">—</span>';
         const actions = [];
-        if (request.status === 'submitted' && can('request.triage')) actions.push(actionButton('request.transition', request.id, request.version, 'Triage', 'triaged'));
-        if (request.status === 'triaged' && can('request.accept')) actions.push(actionButton('request.transition', request.id, request.version, 'Accept', 'accepted'));
-        if (request.status === 'triaged' && can('request.reject')) actions.push(actionButton('request.transition', request.id, request.version, 'Reject', 'rejected'));
-        if (request.status === 'accepted' && can('request.convert')) actions.push(actionButton('workorder.convert', request.id, request.version, 'Create work order', '', request.subcategory || request.category));
+        if (request.status === 'submitted' && can('request.triage')) actions.push(actionButton({ operation: 'request.transition', id: request.id, version: request.version, label: 'Triage', targetStatus: 'triaged' }));
+        if (request.status === 'triaged' && can('request.accept')) actions.push(actionButton({ operation: 'request.transition', id: request.id, version: request.version, label: 'Accept', targetStatus: 'accepted' }));
+        if (request.status === 'triaged' && can('request.reject')) actions.push(actionButton({ operation: 'request.transition', id: request.id, version: request.version, label: 'Reject', targetStatus: 'rejected', secondary: true }));
+        if (request.status === 'accepted' && can('request.convert')) actions.push(actionButton({ operation: 'workorder.convert', id: request.id, version: request.version, label: 'Create work order', serviceCode: request.subcategory || request.category }));
         return actions.length ? `<div class="actions">${actions.join('')}</div>` : '<span class="muted">—</span>';
       };
       const renderRequests = () => {
         const target = document.getElementById('requests');
         if (!state.requests.length) { target.className = 'empty'; target.textContent = 'No requests yet.'; return; }
         target.className = '';
-        target.innerHTML = `<table><thead><tr><th>Reference</th><th>Title</th><th>Priority</th><th>Status</th>${isStaff() ? '<th>Actions</th>' : ''}</tr></thead><tbody>${state.requests.map(r => `<tr><td>${escapeHtml(r.reference || r.id)}</td><td>${escapeHtml(r.title || '')}</td><td>${escapeHtml(r.priority || 'normal')}</td><td><span class="pill">${escapeHtml(r.status)}</span></td>${isStaff() ? `<td>${requestActions(r)}</td>` : ''}</tr>`).join('')}</tbody></table>`;
+        target.innerHTML = `<table><thead><tr><th>Reference</th><th>Title</th><th>Priority</th><th>Status</th>${isStaff() ? '<th>Actions</th>' : ''}</tr></thead><tbody>${state.requests.map((request) => `<tr><td>${escapeHtml(request.reference || request.id)}</td><td>${escapeHtml(request.title || '')}</td><td>${escapeHtml(request.priority || 'normal')}</td><td><span class="pill">${escapeHtml(request.status)}</span></td>${isStaff() ? `<td>${requestActions(request)}</td>` : ''}</tr>`).join('')}</tbody></table>`;
       };
-      const nextWorkorderStatus = (status) => ({ assigned: 'acknowledged', acknowledged: 'en_route', en_route: 'on_scene', on_scene: 'working', working: 'pending_inspection', pending_inspection: 'completed' }[status] || '');
+      const nextWorkorderStatus = (status) => ({ assigned: 'acknowledged', acknowledged: 'en_route', en_route: 'on_scene', on_scene: 'working', working: 'pending_inspection', pending_inspection: 'completed', rework_required: 'working' }[status] || '');
       const workorderActions = (workorder) => {
-        const actions = [];
-        if (workorder.status === 'unassigned' && can('workorder.self_assign')) actions.push(actionButton('workorder.selfAssign', workorder.id, workorder.version, 'Self assign'));
-        const next = nextWorkorderStatus(workorder.status);
-        if (next && can('workorder.update.assigned')) actions.push(actionButton('workorder.transition', workorder.id, workorder.version, `Move to ${next.replace(/_/g, ' ')}`, next));
-        return actions.length ? `<div class="actions">${actions.join('')}</div>` : '<span class="muted">—</span>';
+        const detail = state.workorderDetails[Number(workorder.id)];
+        const actions = [actionButton({ operation: 'workorder.open', id: workorder.id, version: workorder.version, label: state.selectedWorkorderId === Number(workorder.id) ? 'Workspace open' : 'Open workspace', secondary: state.selectedWorkorderId !== Number(workorder.id) })];
+        if (workorder.status === 'unassigned' && can('workorder.self_assign')) actions.push(actionButton({ operation: 'workorder.selfAssign', id: workorder.id, version: workorder.version, label: 'Self assign' }));
+        const required = inspectionRequired(workorder);
+        const inspectionStatus = detail?.inspection?.status;
+        if (workorder.status === 'working' && required && can('field.inspection.execute') && (!inspectionStatus || inspectionStatus === 'failed')) {
+          actions.push(actionButton({ operation: 'inspection.create', id: workorder.id, version: detail?.version || workorder.version, label: 'Request inspection' }));
+        } else {
+          let next = nextWorkorderStatus(workorder.status);
+          if (workorder.status === 'working' && required) next = inspectionStatus === 'passed' ? 'completed' : '';
+          if (workorder.status === 'pending_inspection' && required && inspectionStatus !== 'passed') next = '';
+          if (next && can('workorder.update.assigned')) actions.push(actionButton({ operation: 'workorder.transition', id: workorder.id, version: detail?.version || workorder.version, label: `Move to ${humanizeKey(next)}`, targetStatus: next }));
+        }
+        return `<div class="workorder-card-actions">${actions.join('')}</div>`;
+      };
+      const checklistProgress = (workorder) => {
+        const detail = state.workorderDetails[Number(workorder.id)];
+        const items = detail?.checklist?.items || [];
+        const values = detail?.checklist?.values || {};
+        if (!items.length) return 'Checklist loading';
+        const complete = items.filter((item) => values[item.key] === true || (typeof values[item.key] === 'string' && values[item.key] !== '')).length;
+        return `${complete}/${items.length} checklist items`;
       };
       const renderWorkorders = () => {
         const target = document.getElementById('workorders');
-        if (!state.workorders.length) { target.className = 'empty'; target.textContent = 'No work orders yet.'; return; }
-        target.className = '';
-        target.innerHTML = `<table><thead><tr><th>Reference</th><th>Template</th><th>Status</th><th>Assigned employee</th><th>Actions</th></tr></thead><tbody>${state.workorders.map(workorder => `<tr><td>${escapeHtml(workorder.reference || workorder.id)}</td><td>${escapeHtml(workorder.templateKey || '—')}</td><td><span class="pill">${escapeHtml(workorder.status)}</span></td><td>${escapeHtml(workorder.assignedEmployeeId || '—')}</td><td>${workorderActions(workorder)}</td></tr>`).join('')}</tbody></table>`;
+        if (!state.workorders.length) { target.className = 'empty'; target.textContent = 'No work orders yet.'; renderWorkorderDetail(); return; }
+        target.className = 'workorder-stack';
+        target.innerHTML = state.workorders.map((workorder) => `<article class="workorder-card${state.selectedWorkorderId === Number(workorder.id) ? ' is-selected' : ''}" data-workorder-card="${Number(workorder.id)}"><div class="workorder-card-main"><div class="workorder-card-top"><span class="workorder-reference">${escapeHtml(workorder.reference || `WO-${workorder.id}`)}</span><span class="pill">${escapeHtml(humanizeKey(workorder.status))}</span></div><h3>${escapeHtml(humanizeKey(workorder.templateKey || 'Work order'))}</h3><div class="workorder-card-meta"><span>${escapeHtml(workorder.assignedEmployeeId ? `Employee ${workorder.assignedEmployeeId}` : 'Unassigned')}</span><span>${escapeHtml(checklistProgress(workorder))}</span><span class="workorder-version">v${Number(workorder.version) || 0}</span></div></div>${workorderActions(workorder)}</article>`).join('');
+        renderWorkorderDetail();
+      };
+      const renderChecklist = (workorder, detail) => {
+        const items = detail.checklist?.items || [];
+        const values = detail.checklist?.values || {};
+        if (!items.length) return '<p class="detail-empty">No checklist is attached to this template.</p>';
+        return `<ul class="detail-list">${items.map((item) => {
+          const key = item.key || item.name;
+          const type = item.type || 'boolean';
+          const value = values[key];
+          const complete = value === true || (typeof value === 'string' && value !== '');
+          const checklistWritable = can('field.checklist.update') && ['on_scene', 'working'].includes(workorder.status);
+          if (type === 'boolean' || type === 'confirmation') return `<li><label class="${complete ? 'is-complete' : ''}"><input type="checkbox" data-operation="checklist.update" data-id="${Number(workorder.id)}" data-version="${Number(detail.version) || 0}" data-key="${escapeHtml(key)}" data-value-type="boolean" ${complete ? 'checked' : ''} ${checklistWritable ? '' : 'disabled'} /><span>${escapeHtml(humanizeKey(item.label || key))}</span></label></li>`;
+          return `<li><label><span>${escapeHtml(humanizeKey(item.label || key))}</span><input type="text" data-operation="checklist.update" data-id="${Number(workorder.id)}" data-version="${Number(detail.version) || 0}" data-key="${escapeHtml(key)}" data-value-type="${escapeHtml(type)}" value="${escapeHtml(value || '')}" ${checklistWritable ? '' : 'disabled'} /></label></li>`;
+        }).join('')}</ul>`;
+      };
+      const renderFieldActions = (workorder, detail) => {
+        const actions = detail.actions?.actions || [];
+        if (!actions.length) return '<p class="detail-empty">Field steps are not available for this template.</p>';
+        return `<div class="detail-actions">${actions.map((action) => {
+          const key = action.key || action.actionKey;
+          const active = detail.activeActions?.[key];
+          const label = humanizeKey(key);
+          const fieldWritable = can('field.action.execute') && ['on_scene', 'working'].includes(workorder.status);
+          const control = active
+            ? actionButton({ operation: 'field.complete', id: workorder.id, version: detail.version, label: 'Complete', actionKey: key, proofValue: active.token, disabled: !fieldWritable })
+            : actionButton({ operation: 'field.start', id: workorder.id, version: detail.version, label: 'Start', actionKey: key, secondary: true, disabled: !fieldWritable });
+          return `<div class="detail-action-row"><div class="detail-action-label"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(action.type || 'FIELD')} · ${escapeHtml(formatDuration(action.duration))}</span></div>${control}</div>`;
+        }).join('')}</div>`;
+      };
+      const renderInspection = (workorder, detail) => {
+        if (!inspectionRequired(workorder)) return '<p class="detail-empty">No inspection gate is required for this template. Complete the checklist before moving the order forward.</p>';
+        if (detail.inspectionUnavailable) return '<p class="detail-empty">Inspection status is restricted to an authorized reviewer. Ask a supervisor to sign off after the checklist is complete.</p>';
+        const inspection = detail.inspection;
+        if (!inspection) {
+          const canCreate = workorder.status === 'working' && can('field.inspection.execute');
+          return `<div class="detail-inspection"><div class="detail-inspection-status"><span class="pill">Not requested</span><span class="detail-empty">Supervisor sign-off required</span></div>${canCreate ? actionButton({ operation: 'inspection.create', id: workorder.id, version: detail.version, label: 'Request inspection' }) : '<p class="detail-empty">Move the work order to working, then ask an authorized reviewer to start the inspection.</p>'}</div>`;
+        }
+        const status = inspection.status || 'pending';
+        const canReview = can('field.inspection.execute');
+        const notesField = `<textarea class="detail-note" data-inspection-notes="${Number(inspection.id)}" maxlength="1000" placeholder="Optional inspection note">${escapeHtml(inspection.notes || '')}</textarea>`;
+        let controls = '';
+        if (canReview && ['pending', 'rework_required'].includes(status)) controls = `<div class="actions">${actionButton({ operation: 'inspection.pass', id: inspection.id, version: workorder.version, label: 'Pass inspection' })}${actionButton({ operation: 'inspection.fail', id: inspection.id, version: workorder.version, label: 'Fail inspection', secondary: true })}</div>`;
+        else if (canReview && status === 'failed') controls = actionButton({ operation: 'inspection.rework', id: inspection.id, version: workorder.version, label: 'Send to rework', secondary: true });
+        return `<div class="detail-inspection"><div class="detail-inspection-status"><span class="pill">${escapeHtml(humanizeKey(status))}</span><span class="detail-empty">Inspection #${Number(inspection.id)}</span></div>${['pending', 'rework_required', 'failed'].includes(status) && canReview ? notesField : ''}${controls || '<p class="detail-empty">This inspection is awaiting the next authorized workflow step.</p>'}</div>`;
+      };
+      const renderWorkorderDetail = () => {
+        const target = document.getElementById('workorder-detail');
+        const workorder = getWorkorder(state.selectedWorkorderId);
+        if (!workorder) { target.hidden = true; target.innerHTML = ''; return; }
+        const detail = ensureDetail(workorder);
+        target.hidden = false;
+        if (detail.loading && !detail.checklist && !detail.actions) { target.innerHTML = '<div class="detail-loading">Loading work-order workspace…</div>'; return; }
+        const detailError = detail.error ? `<div class="error detail-alert">${escapeHtml(detail.error)}</div>` : '';
+        target.innerHTML = `${detailError}<div class="detail-header"><div><span class="detail-kicker">Selected work order · v${Number(detail.version) || 0}</span><h3>${escapeHtml(workorder.reference || `WO-${workorder.id}`)}</h3><p class="muted">${escapeHtml(humanizeKey(workorder.templateKey || 'Work order'))} · ${escapeHtml(humanizeKey(workorder.status))}</p></div><div class="actions">${actionButton({ operation: 'workorder.reload', id: workorder.id, version: detail.version, label: 'Refresh workspace', secondary: true })}${actionButton({ operation: 'workorder.close', id: workorder.id, version: detail.version, label: 'Close workspace', secondary: true })}</div></div><div class="detail-grid"><section class="detail-card" aria-labelledby="checklist-title-${Number(workorder.id)}"><h4 id="checklist-title-${Number(workorder.id)}">Checklist</h4><p class="detail-card-subtitle">Update the field record before completion.</p>${renderChecklist(workorder, detail)}</section><section class="detail-card" aria-labelledby="field-title-${Number(workorder.id)}"><h4 id="field-title-${Number(workorder.id)}">Field steps</h4><p class="detail-card-subtitle">Server-issued tokens protect each step.</p>${renderFieldActions(workorder, detail)}</section><section class="detail-card" aria-labelledby="inspection-title-${Number(workorder.id)}"><h4 id="inspection-title-${Number(workorder.id)}">Inspection</h4><p class="detail-card-subtitle">Templates with a gate cannot be completed early.</p>${renderInspection(workorder, detail)}</section></div><div class="detail-footer"><span class="muted">Changes are server-validated against your role, version, and position.</span><span class="workorder-version">Location ${workorder.location ? 'attached' : 'not supplied'}</span></div>`;
       };
       const renderOperations = () => {
         const section = document.getElementById('operations');
@@ -187,56 +475,148 @@
         nui('workorder.list', { page: 1, pageSize: 50 });
       };
       const refreshAll = () => { refreshRequests(); refreshWorkorders(); };
+      const detailOperations = new Set(['workorder.get', 'checklist.get', 'checklist.update', 'field.actions', 'field.start', 'field.complete', 'inspection.latest', 'inspection.create', 'inspection.pass', 'inspection.fail', 'inspection.rework']);
+      const selectWorkorder = (id, force = false) => {
+        const workorder = getWorkorder(id);
+        if (!workorder) return;
+        state.selectedWorkorderId = Number(workorder.id);
+        const detail = ensureDetail(workorder);
+        if (!force && (detail.checklist || detail.actions) && !detail.error) { renderWorkorders(); return; }
+        detail.loading = true;
+        detail.error = '';
+        detail.inspectionUnavailable = false;
+        detail.mutating = false;
+        renderWorkorders();
+        if (mock) {
+          detail.checklist = { items: [{ key: 'area_secured', type: 'boolean', required: true }, { key: 'site_checked', type: 'boolean', required: true }, { key: 'record_updated', type: 'boolean', required: true }], values: { area_secured: true }, version: detail.version };
+          detail.actions = { actions: [{ key: 'secure_area', type: 'SECURE', duration: 4000 }, { key: 'inspect_site', type: 'INSPECT', duration: 5000 }], version: detail.version };
+          detail.inspection = inspectionRequired(workorder) ? { id: 44, status: 'pending', workorderId: workorder.id } : null;
+          detail.loading = false;
+          renderWorkorders();
+          return;
+        }
+        nui('workorder.get', { id: workorder.id });
+        nui('checklist.get', { workorderId: workorder.id });
+        nui('field.actions', { workorderId: workorder.id });
+        nui('inspection.latest', { workorderId: workorder.id });
+      };
       const applyMessage = (message) => {
         if (!message) return;
         if (message.type === 'civicos:open') {
           const catalog = catalogEntries(message.payload?.catalog);
-          if (catalog.length) {
-            state.bootstrap = { ...(state.bootstrap || {}), catalog };
-            renderServices();
-            renderStats();
-          }
+          if (catalog.length) state.bootstrap = { ...(state.bootstrap || {}), catalog };
           setVisible(true);
           return;
         }
         if (message.type === 'civicos:close') { setVisible(false); return; }
         if (message.type !== 'civicos:api:result') return;
+        const pending = pendingNui.get(message.requestId);
+        pendingNui.delete(message.requestId);
+        const operation = message.operation;
+        const payload = pending?.payload || {};
+        const responseData = message.result?.data;
+        const detailId = Number(payload.workorderId || responseData?.workorderId || (operation === 'workorder.get' ? (payload.id || responseData?.id) : 0) || 0);
+        const detail = detailId ? state.workorderDetails[detailId] : null;
         if (!message.result?.ok) {
           const error = apiErrorMessage(message.result);
-          setError(error);
+          if (detailOperations.has(operation) && detail) {
+            if (operation === 'inspection.latest' && message.result.error?.code === 'AUTH_FORBIDDEN') detail.inspectionUnavailable = true;
+            else detail.error = error;
+            detail.loading = false;
+            detail.mutating = false;
+            renderWorkorders();
+          } else setError(error);
           if (message.operation === 'request.create') setFormStatus(`Request failed: ${error}`);
-          if (message.operation !== 'request.create') setFormStatus(`Action failed: ${error}`);
+          else if (!detailOperations.has(operation)) setFormStatus(`Action failed: ${error}`);
+          renderStats();
+          renderRequests();
           return;
         }
         setError('');
+        const data = message.result.data;
         if (message.operation === 'request.create') {
-          const requestId = message.result.data?.id;
+          const requestId = data?.id;
           setFormStatus(requestId ? `Request submitted (#${requestId})` : 'Request submitted');
           document.getElementById('request-form').reset();
           refreshRequests();
           return;
         }
         if (message.operation === 'bootstrap') {
-          const bootstrap = message.result.data || {};
+          const bootstrap = data || {};
           const catalog = catalogEntries(bootstrap.catalog);
           state.bootstrap = { ...bootstrap, catalog: catalog.length ? catalog : (state.bootstrap?.catalog || []) };
           renderServices();
           if (isStaff()) refreshWorkorders();
         }
-        if (message.operation === 'request.list') state.requests = message.result.data.items || [];
-        if (message.operation === 'workorder.list') state.workorders = message.result.data?.items || [];
-        if (['request.transition', 'workorder.convert', 'workorder.selfAssign', 'workorder.transition'].includes(message.operation)) {
+        if (operation === 'request.list') state.requests = data?.items || [];
+        if (operation === 'workorder.list') {
+          state.workorders = data?.items || [];
+          state.workorders.forEach((workorder) => ensureDetail(workorder));
+        }
+        if (detail && detailOperations.has(operation)) {
+          if (operation === 'workorder.get') {
+            const workorder = getWorkorder(detailId);
+            if (workorder && data) Object.assign(workorder, data);
+            detail.version = Number(data?.version) || detail.version;
+            if (detail.checklist || detail.actions) detail.loading = false;
+          }
+          if (operation === 'checklist.get') { detail.checklist = data || { items: [], values: {}, version: detail.version }; detail.version = Number(data?.version) || detail.version; detail.loading = false; }
+          if (operation === 'field.actions') { detail.actions = data || { actions: [], version: detail.version }; detail.version = Number(data?.version) || detail.version; detail.loading = false; }
+          if (operation === 'inspection.latest') { detail.inspection = data || null; detail.inspectionUnavailable = false; detail.loading = false; }
+          if (operation === 'checklist.update') {
+            detail.checklist = detail.checklist || { items: [], values: {}, version: detail.version };
+            detail.checklist.values = { ...(detail.checklist.values || {}), [data.key]: data.value };
+            detail.checklist.version = data.version;
+            detail.version = Number(data.version) || detail.version;
+            detail.mutating = false;
+            setWorkorderVersion(data.id, data.version);
+          }
+          if (operation === 'field.start') {
+            const actionKey = (data.action && typeof data.action === 'object' ? data.action.key : data.action) || detail.pendingActionKey;
+            if (actionKey) detail.activeActions[actionKey] = { token: data.token, expiresAt: data.expiresAt };
+            detail.pendingActionKey = '';
+            detail.version = Number(data.version) || detail.version;
+            detail.mutating = false;
+            setWorkorderVersion(state.selectedWorkorderId, data.version);
+          }
+          if (operation === 'field.complete') {
+            const completedAction = data.action && typeof data.action === 'object' ? data.action.key : data.action;
+            delete detail.activeActions[completedAction || detail.pendingActionKey];
+            detail.pendingActionKey = '';
+            detail.version = Number(data.version) || detail.version;
+            detail.mutating = false;
+            setWorkorderVersion(data.id, data.version);
+          }
+          if (operation === 'inspection.create') {
+            detail.inspection = { id: data.inspectionId, workorderId: data.workorderId, status: 'pending' };
+            detail.version = Number(data.version) || detail.version;
+            detail.mutating = false;
+            setWorkorderVersion(data.workorderId, data.version, 'pending_inspection');
+            refreshWorkorders();
+          }
+          if (['inspection.pass', 'inspection.fail', 'inspection.rework'].includes(operation)) {
+            detail.mutating = false;
+            nui('inspection.latest', { workorderId: state.selectedWorkorderId });
+            refreshWorkorders();
+          }
+        }
+        if (['request.transition', 'workorder.convert', 'workorder.selfAssign', 'workorder.transition'].includes(operation)) {
           setFormStatus('Action completed');
+          if (operation === 'workorder.transition' && data?.id) setWorkorderVersion(data.id, data.version, data.status);
           refreshAll();
         }
-        renderStats(); renderRequests(); renderWorkorders();
+        renderStats();
+        renderRequests();
       };
       window.addEventListener('message', (event) => applyMessage(event.data));
       const load = async () => {
         setError('');
+        state.selectedWorkorderId = null;
+        state.workorderDetails = {};
         if (mock) {
-          state.bootstrap = { identity: { displayName: 'Demo Citizen', role: 'CITIZEN' }, catalog: [{ code: 'traffic_signal_failure', label: 'Traffic signal failure' }], features: {} };
-          state.requests = [{ id: 1, reference: '311-2026-000001', title: 'Demo request', priority: 'normal', status: 'submitted' }];
+          state.bootstrap = { identity: { displayName: 'Demo Supervisor', role: 'SUPERVISOR', departmentName: 'Public Works' }, permissions: ['workorder.read.department', 'workorder.update.assigned', 'workorder.self_assign', 'field.checklist.update', 'field.action.execute', 'field.inspection.execute'], catalog: [{ code: 'traffic_signal_failure', label: 'Traffic signal failure' }], features: {} };
+          state.requests = [{ id: 1, reference: '311-2026-000001', title: 'Signal timing issue', priority: 'high', status: 'submitted', version: 1 }];
+          state.workorders = [{ id: 7, reference: 'WO-2026-000007', templateKey: 'traffic_signal_repair', status: 'working', assignedEmployeeId: 12, version: 4, metadata: { template: { inspectionRequired: true } }, location: { x: 1, y: 2, z: 3 } }];
         } else { nui('bootstrap'); nui('request.list', { page: 1, pageSize: 25 }); }
         renderServices();
         renderStats(); renderRequests(); renderWorkorders();
@@ -245,23 +625,54 @@
       document.getElementById('workorders-refresh').addEventListener('click', refreshWorkorders);
       const handleAction = (event) => {
         const button = event.target.closest('button[data-operation]');
-        if (!button || mock) return;
-        button.disabled = true;
+        if (!button) return;
         const operation = button.dataset.operation;
         const id = Number(button.dataset.id);
         const expectedVersion = Number(button.dataset.version);
-        if (operation === 'request.transition') {
-          nui(operation, { id, expectedVersion, targetStatus: button.dataset.targetStatus, reason: 'NUI staff action' });
-        } else if (operation === 'workorder.convert') {
-          nui(operation, { requestId: id, expectedVersion, serviceCode: button.dataset.serviceCode });
-        } else if (operation === 'workorder.selfAssign') {
-          nui(operation, { workorderId: id, expectedVersion });
-        } else if (operation === 'workorder.transition') {
-          nui(operation, { workorderId: id, expectedVersion, targetStatus: button.dataset.targetStatus, reason: 'NUI staff action' });
+        if (operation === 'workorder.open') { selectWorkorder(id); return; }
+        if (operation === 'workorder.close') { state.selectedWorkorderId = null; renderWorkorders(); return; }
+        if (operation === 'workorder.reload') { selectWorkorder(id, true); return; }
+        if (mock) return;
+        button.disabled = true;
+        if (operation === 'request.transition') nui(operation, { id, expectedVersion, targetStatus: button.dataset.targetStatus, reason: 'NUI staff action' });
+        else if (operation === 'workorder.convert') nui(operation, { requestId: id, expectedVersion, serviceCode: button.dataset.serviceCode });
+        else if (operation === 'workorder.selfAssign') nui(operation, { workorderId: id, expectedVersion });
+        else if (operation === 'workorder.transition') nui(operation, { workorderId: id, expectedVersion, targetStatus: button.dataset.targetStatus, reason: 'NUI staff action' });
+        else if (operation === 'inspection.create') nui(operation, { workorderId: id, expectedVersion });
+        else if (operation === 'inspection.pass' || operation === 'inspection.fail') {
+          const notes = document.querySelector(`[data-inspection-notes="${id}"]`)?.value || '';
+          const active = state.workorderDetails[state.selectedWorkorderId];
+          if (active) active.mutating = true;
+          nui(operation, { id, workorderId: state.selectedWorkorderId, notes, metadata: { source: 'civicos-nui' } });
+        } else if (operation === 'inspection.rework') {
+          const notes = document.querySelector(`[data-inspection-notes="${id}"]`)?.value || '';
+          const active = state.workorderDetails[state.selectedWorkorderId];
+          if (active) active.mutating = true;
+          nui(operation, { id, workorderId: state.selectedWorkorderId, notes });
+        } else if (operation === 'field.start') {
+          const active = state.workorderDetails[state.selectedWorkorderId];
+          if (active) { active.mutating = true; active.pendingActionKey = button.dataset.actionKey; }
+          nui(operation, { workorderId: id, expectedVersion, actionKey: button.dataset.actionKey });
+        } else if (operation === 'field.complete') {
+          const active = state.workorderDetails[state.selectedWorkorderId];
+          if (active) { active.mutating = true; active.pendingActionKey = button.dataset.actionKey; }
+          nui(operation, { workorderId: id, token: button.dataset.proof, actionKey: button.dataset.actionKey, expectedVersion, result: { source: 'civicos-nui' } });
         }
+      };
+      const handleChecklistChange = (event) => {
+        const input = event.target.closest('[data-operation="checklist.update"]');
+        if (!input || mock) return;
+        const detail = state.workorderDetails[state.selectedWorkorderId];
+        if (detail) detail.mutating = true;
+        input.disabled = true;
+        let value = input.dataset.valueType === 'boolean' ? input.checked : input.value;
+        if (input.dataset.valueType === 'numeric') value = Number(value);
+        nui('checklist.update', { workorderId: Number(input.dataset.id), expectedVersion: Number(input.dataset.version), key: input.dataset.key, value });
       };
       document.getElementById('requests').addEventListener('click', handleAction);
       document.getElementById('workorders').addEventListener('click', handleAction);
+      document.getElementById('workorder-detail').addEventListener('click', handleAction);
+      document.getElementById('workorder-detail').addEventListener('change', handleChecklistChange);
       document.getElementById('close').addEventListener('click', () => {
         setVisible(false);
         if (!mock) fetch(`https://${resource}/civicos:close`, { method: 'POST', body: '{}' }).catch(() => undefined);
@@ -276,7 +687,8 @@
         if (mock) { setFormStatus('Saved in mock mode'); return; }
         nui('request.create', { serviceCode: document.getElementById('service').value, title: document.getElementById('title').value, description: document.getElementById('description').value });
       });
-      if (mock) setVisible(true);
+      // The first client close message can arrive before this listener is ready; establish a closed state locally.
+      setVisible(mock);
     </script>
   </body>
 </html>

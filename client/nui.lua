@@ -90,7 +90,8 @@ local function nextId()
 end
 
 function NUI.call(operation, payload, callback)
-    local requestId = nextId()
+    local requestId = NUI.requestIdOverride or nextId()
+    NUI.requestIdOverride = nil
     NUI.pending[requestId] = { callback = callback, operation = operation }
     local preparedPayload = preparePayload(operation, payload)
     if type(TriggerServerEvent) == "function" then
@@ -122,6 +123,7 @@ end
 
 if type(RegisterNUICallback) == "function" then
     RegisterNUICallback("civicos:api", function(data, callback)
+        NUI.requestIdOverride = data and data.requestId
         local requestId = NUI.call(data and data.operation, data and data.payload)
         callback({ ok = true, data = { requestId = requestId } })
     end)

@@ -93,6 +93,9 @@ function ChecklistService:get(source, id)
         assignedIdentifier = assigned,
         departmentId = entity.department_id,
     })
+    if not auth.ok then
+        auth = CivicOS.Authorization:can(source, "workorder.read.department", { departmentId = entity.department_id })
+    end
     if not auth.ok then return auth end
     local items = checklistFor(entity)
     if not items.ok then return items end

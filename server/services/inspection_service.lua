@@ -18,6 +18,41 @@ local function authorize(source, entity)
     return CivicOS.Authorization:can(source, "field.inspection.execute", { departmentId = entity.department_id })
 end
 
+local function authorizeRead(source, entity)
+    local identity = CivicOS.Authorization:identity(source)
+    if not identity.ok then return identity end
+    local role = identity.data.role
+    if CivicOS.Authorization:hasRolePermission(role, "field.inspection.execute") then
+        return CivicOS.Authorization:can(source, "field.inspection.execute", { departmentId = entity.department_id })
+    end
+    if CivicOS.Authorization:hasRolePermission(role, "workorder.read.assigned") then
+        local employee = entity.assigned_employee_id and CivicOS.EmployeeRepository:findById(entity.assigned_employee_id)
+        local assignedIdentifier = employee and employee.ok and employee.data[1] and employee.data[1].persistent_identifier
+        local assigned = CivicOS.Authorization:can(source, "workorder.read.assigned", {
+            assignedIdentifier = assignedIdentifier,
+            departmentId = entity.department_id,
+        })
+        if assigned.ok then return assigned end
+    end
+    if CivicOS.Authorization:hasRolePermission(role, "workorder.read.department") then
+        return CivicOS.Authorization:can(source, "workorder.read.department", { departmentId = entity.department_id })
+    end
+    return errorResult("AUTH_FORBIDDEN", "You do not have permission to view this inspection.")
+end
+
+local function inspectionPayload(item)
+    return {
+        id = item.id,
+        workorderId = item.workorder_id,
+        inspectorIdentifier = item.inspector_identifier,
+        status = item.status,
+        notes = item.notes,
+        metadata = item.metadata,
+        createdAt = item.created_at,
+        updatedAt = item.updated_at,
+    }
+end
+
 function InspectionService:create(source, workorderId, expectedVersion, inspectorIdentifier)
     local entityResult = workorder(workorderId)
     if not entityResult.ok then return entityResult end
@@ -59,16 +94,18 @@ function InspectionService:get(source, id)
     if not entityResult.ok then return entityResult end
     local auth = authorize(source, entityResult.data)
     if not auth.ok then return auth end
-    return { ok = true, data = {
-        id = item.id,
-        workorderId = item.workorder_id,
-        inspectorIdentifier = item.inspector_identifier,
-        status = item.status,
-        notes = item.notes,
-        metadata = item.metadata,
-        createdAt = item.created_at,
-        updatedAt = item.updated_at,
-    } }
+    return { ok = true, data = inspectionPayload(item) }
+end
+
+function InspectionService:latest(source, workorderId)
+    local entityResult = workorder(workorderId)
+    if not entityResult.ok then return entityResult end
+    local auth = authorizeRead(source, entityResult.data)
+    if not auth.ok then return auth end
+    local latest = CivicOS.InspectionRepository:findLatest(workorderId)
+    if not latest.ok then return latest end
+    local item = latest.data[1]
+    return { ok = true, data = item and inspectionPayload(item) or nil }
 end
 
 function InspectionService:pass(source, id, notes, metadata)

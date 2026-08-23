@@ -298,6 +298,12 @@ Api.handlers["inspection.get"] = function(source, input)
     return CivicOS.InspectionService:get(source, id)
 end
 
+Api.handlers["inspection.latest"] = function(source, input)
+    local id, failure = number(tableValue(input).workorderId, "workorderId")
+    if not id then return failure end
+    return CivicOS.InspectionService:latest(source, id)
+end
+
 Api.handlers["inspection.create"] = function(source, input)
     input = tableValue(input)
     local id, failure = number(input.workorderId, "workorderId")
@@ -498,9 +504,10 @@ end
 
 if type(RegisterNetEvent) == "function" and type(AddEventHandler) == "function" then
     RegisterNetEvent("civicos:server:api:call", function(requestId, operation, input)
-        local result = Api.dispatch(source, operation, input)
+        local target = source
+        local result = Api.dispatch(target, operation, input)
         if type(TriggerClientEvent) == "function" then
-            TriggerClientEvent("civicos:client:api:result", source, requestId, result)
+            TriggerClientEvent("civicos:client:api:result", target, requestId, result)
         end
     end)
 end

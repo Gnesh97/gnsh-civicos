@@ -39,6 +39,15 @@ Implemented capabilities include:
 6. Open the in-game CivicOS panel with `/civicos`. Use **Close** or **Escape**
    to hide it again; the panel stays hidden when the resource starts.
 
+### Operations workspace
+
+Staff roles can open a work order from the Operations section to work through
+the server-authorized sequence in one place: update the checklist while on
+scene, start and complete field steps with the issued token, request an
+inspection when the template requires one, and only then move the order to
+completed. The panel displays the current version and actionable server error
+details so a stale or out-of-range action can be corrected without guessing.
+
 The framework adapter is selected automatically by default. Set
 `Config.Framework.Provider` explicitly when more than one framework resource is
 present. Inventory, target, notify, and evidence providers have a `none`

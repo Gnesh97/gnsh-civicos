@@ -55,4 +55,5 @@ export type WorkOrderListItem = {
   assignedEmployeeId?: number;
   version: number;
   location?: { x: number; y: number; z: number };
+  metadata?: { template?: { inspectionRequired?: boolean; [key: string]: unknown }; [key: string]: unknown };
 };

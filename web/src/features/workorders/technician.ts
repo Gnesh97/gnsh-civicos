@@ -12,6 +12,18 @@ export function updateChecklist(workorderId: number, expectedVersion: number, ke
   return call("checklist.update", { workorderId, expectedVersion, key, value });
 }
 
+export function loadChecklist(workorderId: number) {
+  return call("checklist.get", { workorderId });
+}
+
+export function loadActions(workorderId: number) {
+  return call("field.actions", { workorderId });
+}
+
 export function startAction(workorderId: number, expectedVersion: number, actionKey: string) {
   return call("field.start", { workorderId, expectedVersion, actionKey });
+}
+
+export function completeAction(workorderId: number, token: string, actionKey: string, expectedVersion: number, result?: unknown) {
+  return call("field.complete", { workorderId, token, actionKey, expectedVersion, result });
 }

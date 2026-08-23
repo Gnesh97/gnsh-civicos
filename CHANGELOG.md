@@ -5,6 +5,23 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Civic Ledger operations workbench
+
+- Redesigned the CivicOS NUI with a responsive Swiss-grid/liquid-glass workbench
+  while preserving the existing NUI IDs, close behavior, and API transport.
+- Added an inline work-order workspace for server-validated checklists, field
+  action start/complete tokens, version-aware updates, and inspection gates.
+- Added the read-only `inspection.latest` callback plus frontend wrappers so
+  inspection state survives panel refreshes and can be reviewed by the correct
+  department scope.
+- Added department-scoped checklist reads and explicit loading, empty, error,
+  and permission states for operational work.
+- Tuned the visual system for FiveM's desktop-only surface; removed
+  mobile-specific vertical stacking.
+- Loaded authorized work-order detail metadata before evaluating inspection
+  gates, correlated late NUI responses to their work order, and restored
+  action controls after failed requests.
+
 ### Field position validation compatibility
 
 - Accepted FiveM `vector3` values from `GetEntityCoords` in the server-side

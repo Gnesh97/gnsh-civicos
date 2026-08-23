@@ -15,3 +15,11 @@ export function fail(id: number, notes?: string, metadata?: Record<string, unkno
 export function load(id: number) {
   return call("inspection.get", { id });
 }
+
+export function loadLatest(workorderId: number) {
+  return call("inspection.latest", { workorderId });
+}
+
+export function rework(id: number, notes?: string) {
+  return call("inspection.rework", { id, notes });
+}
