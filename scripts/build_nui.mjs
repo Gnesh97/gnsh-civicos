@@ -13,4 +13,9 @@ if (!html.includes("<main id=\"root\">")) {
 if (!html.includes("civicos:api")) {
   throw new Error("web/dist/index.html is missing the NUI API transport.");
 }
+for (const marker of ["NUI_TIMEOUT", "setTimeout", "clearTimeout"]) {
+  if (!html.includes(marker)) {
+    throw new Error(`web/dist/index.html is missing the NUI timeout marker: ${marker}`);
+  }
+}
 console.log(`NUI artifact verified: ${index}`);

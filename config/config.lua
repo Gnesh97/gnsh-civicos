@@ -46,6 +46,10 @@ local Config = {
         MaxActionPayloadBytes = 4096,
     },
 
+    NUI = {
+        RequestTimeoutMs = 15000,
+    },
+
     Scheduler = {
         IntervalMs = 1000,
         MaxJobsPerTick = 25,

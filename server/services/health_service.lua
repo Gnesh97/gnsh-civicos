@@ -7,11 +7,6 @@ local function errorResult(code, message, details)
     return CivicOS.Result.err(code, message, details)
 end
 
-local function count(sql)
-    local result = CivicOS.DatabaseAdapter:scalar(sql)
-    return result.ok and tonumber(result.data) or nil
-end
-
 function HealthService:check(source, detailed)
     if source and tonumber(source) and tonumber(source) > 0 then
         local auth = CivicOS.Authorization:can(source, "system.config.manage", {})
@@ -34,11 +29,8 @@ function HealthService:check(source, detailed)
         integrations = { publicExports = CivicOS.PublicExports ~= nil },
     }
     if detailed then
-        result.active = {
-            requests = count("SELECT COUNT(*) FROM civicos_requests WHERE status NOT IN ('closed', 'cancelled')"),
-            workorders = count("SELECT COUNT(*) FROM civicos_workorders WHERE status NOT IN ('closed', 'cancelled')"),
-            employees = count("SELECT COUNT(*) FROM civicos_employees WHERE duty_status = 'on_duty'"),
-        }
+        local active = CivicOS.HealthRepository and CivicOS.HealthRepository:activeCounts()
+        result.active = active and active.ok and active.data or {}
     end
     return { ok = true, data = result }
 end

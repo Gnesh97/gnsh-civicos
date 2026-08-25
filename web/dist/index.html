@@ -244,10 +244,24 @@
       const mock = typeof GetParentResourceName !== 'function';
       let nuiSequence = 0;
       const pendingNui = new Map();
+      const NUI_TIMEOUT_MS = 15000;
       const nui = (operation, payload = {}) => {
         const requestId = `web-${Date.now()}-${nuiSequence++}`;
-        pendingNui.set(requestId, { operation, payload });
-        return fetch(`https://${resource}/civicos:api`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation, payload, requestId }) }).catch(() => ({ ok: false }));
+        const timeoutId = window.setTimeout(() => {
+          const pending = pendingNui.get(requestId);
+          if (!pending) return;
+          pendingNui.delete(requestId);
+          applyMessage({ type: 'civicos:api:result', requestId, operation: pending.operation, payload: pending.payload, result: { ok: false, error: { code: 'NUI_TIMEOUT', message: 'NUI request timed out.' } } });
+        }, NUI_TIMEOUT_MS);
+        pendingNui.set(requestId, { operation, payload, timeoutId });
+        return fetch(`https://${resource}/civicos:api`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation, payload, requestId }) }).catch(() => {
+          const pending = pendingNui.get(requestId);
+          if (!pending) return { ok: false };
+          pendingNui.delete(requestId);
+          window.clearTimeout(pending.timeoutId);
+          applyMessage({ type: 'civicos:api:result', requestId, operation: pending.operation, payload: pending.payload, result: { ok: false, error: { code: 'NUI_TRANSPORT_FAILED', message: 'NUI request failed.' } } });
+          return { ok: false };
+        });
       };
       const setError = (message = '') => { document.getElementById('error').textContent = message; };
       const setFormStatus = (message = '') => { document.getElementById('form-status').textContent = message; };
@@ -512,8 +526,9 @@
         if (message.type !== 'civicos:api:result') return;
         const pending = pendingNui.get(message.requestId);
         pendingNui.delete(message.requestId);
-        const operation = message.operation;
-        const payload = pending?.payload || {};
+        if (pending?.timeoutId) window.clearTimeout(pending.timeoutId);
+        const operation = message.operation || pending?.operation;
+        const payload = pending?.payload || message.payload || {};
         const responseData = message.result?.data;
         const detailId = Number(payload.workorderId || responseData?.workorderId || (operation === 'workorder.get' ? (payload.id || responseData?.id) : 0) || 0);
         const detail = detailId ? state.workorderDetails[detailId] : null;

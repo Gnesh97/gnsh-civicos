@@ -24,6 +24,7 @@ function Interactions:register(workorder, actionKey)
             },
         })
     end
+    if not zoneId then return nil end
     self.zones[#self.zones + 1] = { id = zoneId, workorderId = workorder.id, actionKey = actionKey }
     return zoneId
 end

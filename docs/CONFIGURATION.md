@@ -13,6 +13,7 @@ normal operations.
 | `Security` | `StrictConfig`, `ValidateUnknownFields`, `RejectAmbiguousFramework` | Startup and boundary validation |
 | `RateLimits` | operation → `windowSeconds`, `maxRequests` | Per-source request throttles |
 | `FieldOperations` | token TTL, action radius, inventory fallback, payload limit | Server-authoritative field actions |
+| `NUI` | `RequestTimeoutMs` | Client/browser request timeout |
 | `Scheduler` | `IntervalMs`, `MaxJobsPerTick` | Shared background worker budget |
 | `SLA` | `WarningLeadSeconds`, `BatchSize` | Warning/breach processing |
 | `Outbox` | `MaxAttempts`, `BatchSize` | Integration delivery/retry budget |
@@ -38,6 +39,16 @@ services.
 - Review role scopes in `config/permissions.lua`.
 - Keep lifecycle values from `shared/enums.lua`; do not introduce ad-hoc state
   strings in services.
+
+Set server-owner overrides outside the resource so they do not travel with a
+shared repository or release artifact:
+
+```cfg
+set civicos_global_admin_identifiers "license:...,fivem:..."
+```
+
+Values are comma- or whitespace-separated FiveM identifiers. ACE `god`/`admin`
+permissions remain supported as a separate server-side authorization path.
 
 ## Production guidance
 

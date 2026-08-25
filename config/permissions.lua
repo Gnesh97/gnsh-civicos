@@ -14,6 +14,9 @@ local Permissions = {
         GLOBAL = "global",
     },
 
+    -- Keep server-owner overrides in server.cfg via civicos_global_admin_identifiers.
+    GlobalAdminIdentifiers = {},
+
     Keys = {
         REQUEST_CREATE = "request.create",
         REQUEST_READ_OWN = "request.read.own",

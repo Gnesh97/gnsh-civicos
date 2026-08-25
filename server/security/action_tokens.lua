@@ -68,7 +68,44 @@ function ActionTokens:consume(source, entityId, actionKey, token, version)
     end
     entry.used = true
     self._entries[token] = nil
-    return { ok = true, data = { consumed = true } }
+    return {
+        ok = true,
+        data = {
+            consumed = true,
+            token = token,
+            entry = {
+                source = entry.source,
+                entityId = entry.entityId,
+                actionKey = entry.actionKey,
+                version = entry.version,
+                expiresAt = entry.expiresAt,
+            },
+        },
+    }
+end
+
+function ActionTokens:restore(consumed)
+    if type(consumed) ~= "table" or type(consumed.token) ~= "string" or type(consumed.entry) ~= "table" then
+        return errorResult("FIELD_ACTION_TOKEN_INVALID", "Consumed field action token cannot be restored.")
+    end
+    local entry = consumed.entry
+    local timestamp = nowMs()
+    local expiresAt = tonumber(entry.expiresAt)
+    if not expiresAt or expiresAt <= timestamp then
+        return errorResult("FIELD_ACTION_TOKEN_INVALID", "Consumed field action token has expired.")
+    end
+    if self._entries[consumed.token] then
+        return errorResult("FIELD_ACTION_TOKEN_REPLAY", "Field action token is already active.")
+    end
+    self._entries[consumed.token] = {
+        source = entry.source,
+        entityId = entry.entityId,
+        actionKey = entry.actionKey,
+        version = entry.version,
+        expiresAt = expiresAt,
+        used = false,
+    }
+    return { ok = true, data = { restored = true } }
 end
 
 CivicOS.ActionTokens = ActionTokens

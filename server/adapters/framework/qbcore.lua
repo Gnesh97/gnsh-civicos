@@ -142,7 +142,7 @@ function Adapter.setDuty(source, state)
     end
     local current = player(source)
     if current and current.Functions and type(current.Functions.SetJobDuty) == "function" then
-        current.Functions.SetJobDuty(state == true)
+        current.Functions:SetJobDuty(state == true)
         return true
     end
     return false
@@ -151,7 +151,7 @@ end
 function Adapter.getMoney(source, account)
     local current = player(source)
     if current and current.Functions and type(current.Functions.GetMoney) == "function" then
-        return current.Functions.GetMoney(account or "cash") or 0
+        return current.Functions:GetMoney(account or "cash") or 0
     end
     return 0
 end
@@ -159,7 +159,7 @@ end
 function Adapter.addMoney(source, account, amount, reason)
     local current = player(source)
     if current and current.Functions and type(current.Functions.AddMoney) == "function" then
-        return current.Functions.AddMoney(account or "cash", amount, reason or "civicos")
+        return current.Functions:AddMoney(account or "cash", amount, reason or "civicos")
     end
     return false
 end
@@ -167,7 +167,7 @@ end
 function Adapter.removeMoney(source, account, amount, reason)
     local current = player(source)
     if current and current.Functions and type(current.Functions.RemoveMoney) == "function" then
-        return current.Functions.RemoveMoney(account or "cash", amount, reason or "civicos")
+        return current.Functions:RemoveMoney(account or "cash", amount, reason or "civicos")
     end
     return false
 end

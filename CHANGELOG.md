@@ -5,6 +5,18 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Framework parity and verification hardening
+
+- Corrected QBCore player money/duty method calls to use the framework's
+  player-method contract.
+- Corrected Qbox export binding, numeric source normalization, native
+  `SetJobDuty`, documented lifecycle events, and usable-item registration.
+- Hardened ESX export discovery when FiveM exposes a proxy instead of a Lua
+  table.
+- Added single-player QBCore, Qbox, and ESX adapter contract smoke specs and
+  included all Lua unit/integration specs in the manual CI workflow.
+- Moved detailed health active-count queries behind a repository boundary.
+
 ### Civic Ledger operations workbench
 
 - Redesigned the CivicOS NUI with a responsive Swiss-grid/liquid-glass workbench

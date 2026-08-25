@@ -93,6 +93,7 @@ server_scripts {
     "server/api/serializers.lua",
     "server/api/callbacks.lua",
     "server/repositories/_base.lua",
+    "server/repositories/health_repository.lua",
     "server/repositories/request_repository.lua",
     "server/repositories/workorder_repository.lua",
     "server/repositories/employee_repository.lua",

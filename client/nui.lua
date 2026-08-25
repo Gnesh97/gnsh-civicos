@@ -89,10 +89,26 @@ local function nextId()
     return string.format("nui-%s-%d", GetGameTimer and GetGameTimer() or os.time(), NUI.sequence)
 end
 
+local function timeoutResult()
+    return { ok = false, error = { code = "NUI_TIMEOUT", message = "NUI request timed out." } }
+end
+
 function NUI.call(operation, payload, callback)
+    if type(operation) ~= "string" or operation == "" then return nil end
     local requestId = NUI.requestIdOverride or nextId()
     NUI.requestIdOverride = nil
-    NUI.pending[requestId] = { callback = callback, operation = operation }
+    local pending = { callback = callback, operation = operation }
+    NUI.pending[requestId] = pending
+    if type(SetTimeout) == "function" then
+        local timeoutMs = CivicOS.Config and CivicOS.Config.NUI and tonumber(CivicOS.Config.NUI.RequestTimeoutMs) or 15000
+        SetTimeout(math.max(1, timeoutMs), function()
+            if NUI.pending[requestId] ~= pending then return end
+            NUI.pending[requestId] = nil
+            local result = timeoutResult()
+            if type(pending.callback) == "function" then pending.callback(result) end
+            send({ type = "civicos:api:result", requestId = requestId, operation = pending.operation, result = result })
+        end)
+    end
     local preparedPayload = preparePayload(operation, payload)
     if type(TriggerServerEvent) == "function" then
         TriggerServerEvent("civicos:server:api:call", requestId, operation, preparedPayload)
@@ -123,8 +139,18 @@ end
 
 if type(RegisterNUICallback) == "function" then
     RegisterNUICallback("civicos:api", function(data, callback)
-        NUI.requestIdOverride = data and data.requestId
-        local requestId = NUI.call(data and data.operation, data and data.payload)
+        local requestIdOverride = type(data) == "table" and data.requestId or nil
+        requestIdOverride = type(requestIdOverride) == "string" and #requestIdOverride > 0 and #requestIdOverride <= 128 and requestIdOverride or nil
+        local operation = type(data) == "table" and data.operation or nil
+        if type(operation) ~= "string" or operation == "" then
+            local result = { ok = false, error = { code = "CORE_INVALID_INPUT", message = "API operation is required." } }
+            local requestId = requestIdOverride or nextId()
+            callback(result)
+            send({ type = "civicos:api:result", requestId = requestId, result = result })
+            return
+        end
+        NUI.requestIdOverride = requestIdOverride
+        local requestId = NUI.call(operation, type(data.payload) == "table" and data.payload or {})
         callback({ ok = true, data = { requestId = requestId } })
     end)
     RegisterNUICallback("civicos:close", function(_, callback)

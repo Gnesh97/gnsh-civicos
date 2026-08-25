@@ -56,6 +56,12 @@ kullanılır; public DTO'larda raw license/citizen identifier bulunmaz.
 - `auto`, güvenilir native duty varsa framework'ü; yoksa CivicOS state'ini seçer.
 - Core feature'ları framework adına değil capability object'ine göre davranır.
 
+Qbox adapter, qbx_core tarafından yayımlanan QBCore-uyumlu server lifecycle
+event'lerini normalize eder: `QBCore:Server:OnPlayerLoaded`,
+`QBCore:Server:OnPlayerUnload`, `QBCore:Server:OnJobUpdate` ve
+`QBCore:Server:SetDuty`. Duty yazımı `exports.qbx_core:SetJobDuty` üzerinden
+yapılır; bu, QBCore adapter'ının kendi event/export kodundan bağımsızdır.
+
 ## Provider fallback'leri
 
 - Inventory: `ox_inventory` veya `none`.

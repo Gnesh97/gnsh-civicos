@@ -44,6 +44,13 @@ local function payload(value)
     return copy(value)
 end
 
+local function restoreToken(consumedToken)
+    if consumedToken and consumedToken.ok and consumedToken.data and CivicOS.ActionTokens and type(CivicOS.ActionTokens.restore) == "function" then
+        return CivicOS.ActionTokens:restore(consumedToken.data)
+    end
+    return { ok = true, data = false }
+end
+
 function FieldService:actions(source, id)
     local result = CivicOS.WorkOrderRepository:findById(id)
     if not result.ok then return result end
@@ -76,6 +83,7 @@ function FieldService:startAction(source, id, expectedVersion, key)
     local states = actionMetadata(entity).fieldActions
     local prior = states[key]
     if prior and prior.status == "completed" then return errorResult("FIELD_ACTION_COMPLETED", "Field action has already been completed.") end
+    local originalMetadata = copy(entity.metadata or {})
     local consumed = { ok = true, data = { consumed = {} } }
     if action.consumeOnStart then
         consumed = CivicOS.InventoryService:consume(source, action.items)
@@ -96,7 +104,13 @@ function FieldService:startAction(source, id, expectedVersion, key)
         return updated
     end
     local token = CivicOS.ActionTokens:issue(source, id, key, updated.data.version)
-    if not token.ok then return token end
+    if not token.ok then
+        CivicOS.WorkOrderRepository:updateMetadata(id, updated.data.version, originalMetadata)
+        if action.consumeOnStart and consumed.ok and consumed.data and consumed.data.consumed then
+            CivicOS.InventoryService:restore(source, consumed.data.consumed)
+        end
+        return token
+    end
     return {
         ok = true,
         data = {
@@ -133,10 +147,19 @@ function FieldService:completeAction(source, id, token, key, expectedVersion, re
     local consumed
     if action.consumeOnComplete and not started.inventoryConsumed then
         consumed = CivicOS.InventoryService:consume(source, action.items)
-        if not consumed.ok then return consumed end
+        if not consumed.ok then
+            restoreToken(consumedToken)
+            return consumed
+        end
     end
     local safePayload = payload(resultPayload)
-    if resultPayload ~= nil and not safePayload then return errorResult("FIELD_ACTION_PAYLOAD_TOO_LARGE", "Field action result is too large.") end
+    if resultPayload ~= nil and not safePayload then
+        if consumed and consumed.ok and consumed.data and consumed.data.consumed then
+            CivicOS.InventoryService:restore(source, consumed.data.consumed)
+        end
+        restoreToken(consumedToken)
+        return errorResult("FIELD_ACTION_PAYLOAD_TOO_LARGE", "Field action result is too large.")
+    end
     local metadata = actionMetadata(entity)
     metadata.fieldActions[key] = {
         status = "completed",
@@ -152,6 +175,7 @@ function FieldService:completeAction(source, id, token, key, expectedVersion, re
         if consumed and consumed.ok and consumed.data and consumed.data.consumed then
             CivicOS.InventoryService:restore(source, consumed.data.consumed)
         end
+        restoreToken(consumedToken)
         return updated
     end
     if CivicOS.ContributionService then CivicOS.ContributionService:recordAction(source, id, key) end

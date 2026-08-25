@@ -8,16 +8,19 @@ local callbacks = Shared.callbacks()
 local internalDuty = {}
 
 local function resource()
-    if type(exports) == "table" and exports.qbx_core then
+    local ok, value = pcall(function()
         return exports.qbx_core
-    end
-    return nil
+    end)
+    return ok and value or nil
 end
 
 local function player(source)
     local qbx = resource()
     if qbx and type(qbx.GetPlayer) == "function" then
-        local ok, value = pcall(qbx.GetPlayer, source)
+        local normalizedSource = tonumber(source) or source
+        local ok, value = pcall(function()
+            return qbx:GetPlayer(normalizedSource)
+        end)
         if ok then
             return value
         end
@@ -85,13 +88,16 @@ function Adapter.setDuty(source, state)
         return true
     end
     local qbx = resource()
-    if qbx and type(qbx.SetDuty) == "function" then
-        local ok, result = pcall(qbx.SetDuty, source, state == true)
+    if qbx and type(qbx.SetJobDuty) == "function" then
+        local normalizedSource = tonumber(source) or source
+        local ok, result = pcall(function()
+            return qbx:SetJobDuty(normalizedSource, state == true)
+        end)
         return ok and result ~= false
     end
     local current = player(source)
     if current and current.Functions and type(current.Functions.SetJobDuty) == "function" then
-        current.Functions.SetJobDuty(state == true)
+        current.Functions:SetJobDuty(state == true)
         return true
     end
     return false
@@ -100,12 +106,15 @@ end
 function Adapter.getMoney(source, account)
     local qbx = resource()
     if qbx and type(qbx.GetMoney) == "function" then
-        local ok, value = pcall(qbx.GetMoney, source, account or "cash")
+        local normalizedSource = tonumber(source) or source
+        local ok, value = pcall(function()
+            return qbx:GetMoney(normalizedSource, account or "cash")
+        end)
         if ok then return value or 0 end
     end
     local current = player(source)
     if current and current.Functions and type(current.Functions.GetMoney) == "function" then
-        return current.Functions.GetMoney(account or "cash") or 0
+        return current.Functions:GetMoney(account or "cash") or 0
     end
     return 0
 end
@@ -113,12 +122,15 @@ end
 function Adapter.addMoney(source, account, amount, reason)
     local qbx = resource()
     if qbx and type(qbx.AddMoney) == "function" then
-        local ok, value = pcall(qbx.AddMoney, source, account or "cash", amount, reason or "civicos")
+        local normalizedSource = tonumber(source) or source
+        local ok, value = pcall(function()
+            return qbx:AddMoney(normalizedSource, account or "cash", amount, reason or "civicos")
+        end)
         if ok then return value end
     end
     local current = player(source)
     if current and current.Functions and type(current.Functions.AddMoney) == "function" then
-        return current.Functions.AddMoney(account or "cash", amount, reason or "civicos")
+        return current.Functions:AddMoney(account or "cash", amount, reason or "civicos")
     end
     return false
 end
@@ -126,12 +138,15 @@ end
 function Adapter.removeMoney(source, account, amount, reason)
     local qbx = resource()
     if qbx and type(qbx.RemoveMoney) == "function" then
-        local ok, value = pcall(qbx.RemoveMoney, source, account or "cash", amount, reason or "civicos")
+        local normalizedSource = tonumber(source) or source
+        local ok, value = pcall(function()
+            return qbx:RemoveMoney(normalizedSource, account or "cash", amount, reason or "civicos")
+        end)
         if ok then return value end
     end
     local current = player(source)
     if current and current.Functions and type(current.Functions.RemoveMoney) == "function" then
-        return current.Functions.RemoveMoney(account or "cash", amount, reason or "civicos")
+        return current.Functions:RemoveMoney(account or "cash", amount, reason or "civicos")
     end
     return false
 end
@@ -139,8 +154,10 @@ end
 function Adapter.registerUsableItem(itemName, callback)
     local qbx = resource()
     if qbx and type(qbx.CreateUseableItem) == "function" then
-        qbx.CreateUseableItem(itemName, callback)
-        return true
+        local ok = pcall(function()
+            qbx:CreateUseableItem(itemName, callback)
+        end)
+        return ok
     end
     return false
 end
@@ -166,7 +183,7 @@ end
 function Adapter.onJobChanged(callback)
     callbacks.jobChanged[#callbacks.jobChanged + 1] = callback
     if type(AddEventHandler) == "function" then
-        AddEventHandler("qbx_core:server:jobChanged", function(source)
+        AddEventHandler("QBCore:Server:OnJobUpdate", function(source)
             callback(Adapter.getPlayer(source))
         end)
     end
@@ -175,7 +192,7 @@ end
 function Adapter.onDutyChanged(callback)
     callbacks.dutyChanged[#callbacks.dutyChanged + 1] = callback
     if type(AddEventHandler) == "function" then
-        AddEventHandler("qbx_core:server:dutyChanged", function(source)
+        AddEventHandler("QBCore:Server:SetDuty", function(source)
             callback(Adapter.getPlayer(source))
         end)
     end

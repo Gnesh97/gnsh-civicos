@@ -73,7 +73,11 @@ function Idempotency:run(scopeKey, idempotencyKey, payload, handler, ttlSeconds)
         encoded = encodedOk and encodedValue or nil
     end
     if not encoded then return errorResult("IDEMPOTENCY_RESPONSE_INVALID", "Operation result could not be stored.") end
-    CivicOS.DatabaseAdapter:update("UPDATE civicos_idempotency SET response_json = ? WHERE scope_key = ? AND idempotency_key = ?", { encoded, scopeKey, idempotencyKey })
+    local persisted = CivicOS.DatabaseAdapter:update("UPDATE civicos_idempotency SET response_json = ? WHERE scope_key = ? AND idempotency_key = ?", { encoded, scopeKey, idempotencyKey })
+    local affectedRows = type(persisted) == "table" and persisted.ok and persisted.data and tonumber(persisted.data.affectedRows) or nil
+    if type(persisted) ~= "table" or not persisted.ok or not affectedRows or affectedRows <= 0 then
+        return errorResult("IDEMPOTENCY_PERSIST_FAILED", "Operation completed but its idempotent response could not be stored.", type(persisted) == "table" and persisted.error or nil)
+    end
     return result
 end
 

@@ -10,9 +10,12 @@ local internalDuty = {}
 
 local function framework()
     if ESX then return ESX end
-    if type(exports) == "table" and exports["es_extended"] and type(exports["es_extended"].getSharedObject) == "function" then
-        local ok, value = pcall(exports["es_extended"].getSharedObject, exports["es_extended"])
-        if ok then ESX = value end
+    local ok, export = pcall(function()
+        return exports["es_extended"]
+    end)
+    if ok and export and type(export.getSharedObject) == "function" then
+        local loaded, value = pcall(export.getSharedObject, export)
+        if loaded then ESX = value end
     end
     return ESX
 end
