@@ -36,7 +36,7 @@ function RequestRepository:list(filters)
     end
     local where = #clauses > 0 and (" WHERE " .. table.concat(clauses, " AND ")) or ""
     local page = math.max(1, tonumber(filters.page) or 1)
-    local pageSize = math.min(tonumber(filters.pageSize) or 50, 100)
+    local pageSize = math.min(math.max(1, tonumber(filters.pageSize) or 50), 100)
     params[#params + 1] = pageSize
     params[#params + 1] = (page - 1) * pageSize
     local result = Repository.db():query(
@@ -105,7 +105,7 @@ end
 
 function RequestRepository:listComments(requestId, includeInternal, page, pageSize)
     page = math.max(1, tonumber(page) or 1)
-    pageSize = math.min(tonumber(pageSize) or 50, 100)
+    pageSize = math.min(math.max(1, tonumber(pageSize) or 50), 100)
     local sql = "SELECT id, request_id, author_identifier, visibility, body, created_at FROM civicos_request_comments WHERE request_id = ?"
     local params = { requestId }
     if not includeInternal then
@@ -125,7 +125,7 @@ end
 
 function RequestRepository:listActivity(requestId, page, pageSize)
     page = math.max(1, tonumber(page) or 1)
-    pageSize = math.min(tonumber(pageSize) or 50, 100)
+    pageSize = math.min(math.max(1, tonumber(pageSize) or 50), 100)
     return Repository.db():query([[SELECT id, request_id, activity_type, public_data, created_at
         FROM civicos_request_activity WHERE request_id = ? ORDER BY created_at ASC LIMIT ? OFFSET ?]], {
         requestId, pageSize, (page - 1) * pageSize,

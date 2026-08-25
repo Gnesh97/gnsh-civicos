@@ -13,6 +13,9 @@ introduced must add or amend an entry.
   unsupported metadata at request, inspection, evidence, and crew boundaries.
 - Keep read permissions from widening evidence attachment or work-order
   transition mutations; write actions now require their own permission key.
+- Pin request/work-order list queries to the actor's own or department scope,
+  filter internal activity from citizen detail DTOs, and clamp invalid page
+  sizes before they reach SQL/API responses.
 
 ### Security and schema gate hardening
 

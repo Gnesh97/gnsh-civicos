@@ -48,7 +48,7 @@ function WorkOrderRepository:list(filters)
     end
     local where = #clauses > 0 and (" WHERE " .. table.concat(clauses, " AND ")) or ""
     local page = math.max(1, tonumber(filters.page) or 1)
-    local pageSize = math.min(tonumber(filters.pageSize) or 50, 100)
+    local pageSize = math.min(math.max(1, tonumber(filters.pageSize) or 50), 100)
     params[#params + 1] = pageSize
     params[#params + 1] = (page - 1) * pageSize
     return Repository.rows(Repository.db():query(

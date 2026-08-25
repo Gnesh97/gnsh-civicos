@@ -267,12 +267,28 @@ function WorkOrderService:get(source, id)
 end
 
 function WorkOrderService:list(source, filters)
-    filters = type(filters) == "table" and filters or {}
+    local requested = type(filters) == "table" and filters or {}
+    local scoped = {}
+    for key, value in pairs(requested) do scoped[key] = value end
     local identity = CivicOS.Authorization:identity(source)
     if not identity.ok then return identity end
+    local canReadDepartment = CivicOS.Authorization:hasRolePermission(identity.data.role, "workorder.read.department")
+    local canReadAssigned = CivicOS.Authorization:hasRolePermission(identity.data.role, "workorder.read.assigned")
+    if not canReadDepartment and not canReadAssigned then
+        return errorResult("AUTH_FORBIDDEN", "You do not have permission to list work orders.")
+    end
     if identity.data.role == "TECHNICIAN" then
+        scoped.employeeId = nil
+        scoped.crewId = nil
+        scoped.crewIds = nil
         local employee = CivicOS.EmployeeRepository:findByIdentifier(identity.data.persistentIdentifier)
-        if employee.ok and employee.data[1] then filters.employeeId = employee.data[1].id end
+        if employee.ok and employee.data[1] then
+            scoped.employeeId = employee.data[1].id
+            scoped.departmentId = employee.data[1].department_id
+        else
+            scoped.employeeId = -1
+            scoped.departmentId = identity.data.departmentId
+        end
         if employee.ok and employee.data[1] and CivicOS.CrewRepository then
             local crews = CivicOS.CrewRepository:list(employee.data[1].department_id, "active")
             if crews.ok then
@@ -281,13 +297,26 @@ function WorkOrderService:list(source, filters)
                     local membership = CivicOS.CrewRepository:findMembership(item.id, employee.data[1].id)
                     if membership.ok and membership.data[1] and membership.data[1].status == "active" then memberships[#memberships + 1] = item.id end
                 end
-                filters.crewIds = memberships
+                scoped.crewIds = memberships
             end
         end
-    elseif identity.data.departmentId and not filters.departmentId then
-        filters.departmentId = identity.data.departmentId
+    elseif canReadDepartment then
+        local roleDefinition = CivicOS.Permissions
+            and CivicOS.Permissions.Roles
+            and CivicOS.Permissions.Roles[identity.data.role]
+        scoped.departmentId = roleDefinition and roleDefinition.scope == "global"
+            and requested.departmentId
+            or identity.data.departmentId
+    else
+        -- Roles without department read permission may only see their own
+        -- assigned work. Ignore caller-provided employee/crew filters.
+        scoped.crewId = nil
+        scoped.crewIds = nil
+        local employee = CivicOS.EmployeeRepository:findByIdentifier(identity.data.persistentIdentifier)
+        scoped.employeeId = employee.ok and employee.data[1] and employee.data[1].id or -1
+        scoped.departmentId = identity.data.departmentId
     end
-    local result = CivicOS.WorkOrderRepository:list(filters)
+    local result = CivicOS.WorkOrderRepository:list(scoped)
     if not result.ok then return result end
     local public = {}
     for _, entity in ipairs(result.data or {}) do

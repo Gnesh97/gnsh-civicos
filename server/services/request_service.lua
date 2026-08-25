@@ -170,18 +170,36 @@ function RequestService:get(source, id)
 end
 
 function RequestService:list(source, filters)
-    filters = type(filters) == "table" and filters or {}
+    local requested = type(filters) == "table" and filters or {}
+    local scoped = {}
+    for key, value in pairs(requested) do scoped[key] = value end
     if source then
         local identity = CivicOS.Authorization:identity(source)
         if not identity.ok then return identity end
-        if identity.data.role == "CITIZEN" then
-            filters.requesterIdentifier = identity.data.persistentIdentifier
-        elseif identity.data.departmentName and not filters.departmentId then
-            local department = CivicOS.DepartmentService:getPersisted(identity.data.departmentName)
-            if department.ok then filters.departmentId = department.data.id end
+        local role = identity.data.role
+        local roleDefinition = CivicOS.Permissions
+            and CivicOS.Permissions.Roles
+            and CivicOS.Permissions.Roles[role]
+        local canReadDepartment = CivicOS.Authorization:hasRolePermission(role, "request.read.department")
+        local canReadOwn = CivicOS.Authorization:hasRolePermission(role, "request.read.own")
+        if not canReadOwn and not canReadDepartment then
+            return errorResult("AUTH_FORBIDDEN", "You do not have permission to list requests.")
+        end
+        if not canReadDepartment then
+            -- Own-scope roles must never be widened by a caller-provided
+            -- department filter.
+            scoped.requesterIdentifier = identity.data.persistentIdentifier
+            scoped.departmentId = nil
+        elseif roleDefinition and roleDefinition.scope == "global" then
+            -- Global administrators may intentionally select a department.
+            scoped.departmentId = requested.departmentId
+        else
+            -- Department-scoped staff are pinned to their normalized
+            -- department regardless of client-supplied filters.
+            scoped.departmentId = identity.data.departmentId
         end
     end
-    local result = CivicOS.RequestRepository:list(filters)
+    local result = CivicOS.RequestRepository:list(scoped)
     if not result.ok then return result end
     local public = {}
     for _, entity in ipairs(result.data) do public[#public + 1] = CivicOS.RequestDomain.public(entity) end

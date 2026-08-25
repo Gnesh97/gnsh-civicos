@@ -15,7 +15,7 @@ end
 
 function NotificationRepository:list(recipientIdentifier, unreadOnly, page, pageSize)
     page = math.max(1, tonumber(page) or 1)
-    pageSize = math.min(tonumber(pageSize) or 50, 100)
+    pageSize = math.min(math.max(1, tonumber(pageSize) or 50), 100)
     local sql = [[SELECT id, recipient_identifier, notification_type, title_key, body_key,
         payload, read_at, created_at FROM civicos_notifications WHERE recipient_identifier = ?]]
     local params = { recipientIdentifier }

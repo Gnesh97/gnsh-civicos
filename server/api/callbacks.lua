@@ -11,6 +11,16 @@ local function tableValue(value)
     return type(value) == "table" and value or {}
 end
 
+local publicActivityTypes = {
+    created = true,
+    transition = true,
+    updated = true,
+    comment_added = true,
+    workorder_created = true,
+    workorder_sync = true,
+    sla_met = true,
+}
+
 local function callbackTraceback(message)
     local debugLibrary = rawget(_G, "debug")
     if type(debugLibrary) == "table" and type(debugLibrary.traceback) == "function" then
@@ -36,17 +46,23 @@ local function requestDetail(source, id, staff)
     if not authorized.ok then return authorized end
     local comments = CivicOS.RequestCommentService:list(source, id, 1, 100)
     if not comments.ok then return comments end
+    local internalAuth = staff and CivicOS.Authorization:can(source, "request.comment.internal", {
+        departmentId = requestEntity.department_id,
+    }) or { ok = false }
+    local canViewInternal = internalAuth.ok
     local activity = CivicOS.RequestRepository:listActivity(id, 1, 100)
     if not activity.ok then return activity end
     local safeActivity = {}
     for _, item in ipairs(activity.data or {}) do
-        safeActivity[#safeActivity + 1] = {
-            id = item.id,
-            requestId = item.request_id,
-            activityType = item.activity_type,
-            publicData = CivicOS.Repository.decode(item.public_data),
-            createdAt = item.created_at,
-        }
+        if canViewInternal or publicActivityTypes[item.activity_type] then
+            safeActivity[#safeActivity + 1] = {
+                id = item.id,
+                requestId = item.request_id,
+                activityType = item.activity_type,
+                publicData = CivicOS.Repository.decode(item.public_data),
+                createdAt = item.created_at,
+            }
+        end
     end
     local dto = staff and CivicOS.DTO.staffRequestDetail or CivicOS.DTO.citizenRequestDetail
     return { ok = true, data = dto(requestEntity, comments.data, safeActivity) }

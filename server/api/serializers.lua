@@ -68,7 +68,7 @@ function Serializers.paginated(items, page, pageSize, total)
     return {
         items = items or {},
         page = math.max(1, tonumber(page) or 1),
-        pageSize = math.min(tonumber(pageSize) or 50, 100),
+        pageSize = math.min(math.max(1, tonumber(pageSize) or 50), 100),
         total = tonumber(total) or #(items or {}),
     }
 end

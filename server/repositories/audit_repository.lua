@@ -17,7 +17,7 @@ end
 
 function AuditRepository:list(entityType, entityId, page, pageSize)
     page = math.max(1, tonumber(page) or 1)
-    pageSize = math.min(tonumber(pageSize) or 50, 100)
+    pageSize = math.min(math.max(1, tonumber(pageSize) or 50), 100)
     local params = { entityType, entityId, pageSize, (page - 1) * pageSize }
     local result = Repository.db():query([[SELECT id, actor_identifier, actor_type,
         entity_type, entity_id, action, before_json, after_json, correlation_id, created_at
