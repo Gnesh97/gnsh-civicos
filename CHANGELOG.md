@@ -34,6 +34,8 @@ introduced must add or amend an entry.
 - Exclude nested `web/src` files and local design/development artifacts from
   release bundles, and verify those paths cannot re-enter the published
   artifact.
+- Add a documented code-only/database restore rollback runbook and link it from
+  the installation and release-gate documentation.
 
 ### Security and schema gate hardening
 

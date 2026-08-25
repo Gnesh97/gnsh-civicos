@@ -66,6 +66,7 @@ fallback so the core can boot without optional resources.
 - Configuration: [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md)
 - Integrations: [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md)
 - Migrations: [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)
+- Rollback runbook: [`docs/ROLLBACK.md`](docs/ROLLBACK.md)
 - Troubleshooting: [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
 - Release gate: [`docs/RELEASE_GATE.md`](docs/RELEASE_GATE.md)
 

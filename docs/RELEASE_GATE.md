@@ -30,8 +30,8 @@ after the final test/load/migration run.
 - [ ] Release artifact contains no tests, graph files, source NUI modules,
       secrets, or development-only scripts.
 - [ ] Security review finds no critical/high findings.
-- [ ] Changelog, version, release manifest, and rollback runbook are attached to
-      the release candidate.
+- [ ] Changelog, version, release manifest, and [rollback runbook](ROLLBACK.md)
+      are attached to the release candidate.
 
 ## Blockers
 
