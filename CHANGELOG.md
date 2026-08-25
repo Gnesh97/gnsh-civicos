@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Security and schema gate hardening
+
+- Bound technician self-assignment to the caller's persistent identity and
+  restored department-scoped authorization for dependency removal.
+- Startup migration verification now checks every runtime table instead of only
+  the seven baseline tables, with missing-table regression coverage.
+
 ### Repository metadata
 
 - Refreshed the shared codebase-memory graph artifact after the framework

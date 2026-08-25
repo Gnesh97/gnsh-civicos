@@ -58,7 +58,17 @@ function DispatchService:assign(source, workorderId, expectedVersion, employeeId
 end
 
 function DispatchService:selfAssign(source, workorderId, expectedVersion)
-    local auth = CivicOS.Authorization:can(source, "workorder.self_assign", {})
+    -- Self-assignment is an action on the caller's own employee profile.  The
+    -- technician role uses an `assigned` scope, so passing an empty resource
+    -- would incorrectly deny legitimate self-assignment (or tempt callers to
+    -- weaken the central scope check).  Resolve the identity first and bind
+    -- the authorization resource to that immutable identifier.
+    local identity = CivicOS.Authorization:identity(source)
+    if not identity.ok then return identity end
+    local auth = CivicOS.Authorization:can(source, "workorder.self_assign", {
+        assignedIdentifier = identity.data.persistentIdentifier,
+        departmentId = identity.data.departmentId,
+    })
     if not auth.ok then return auth end
     local employee = CivicOS.EmployeeRepository:findByIdentifier(auth.data.identity.persistentIdentifier)
     if not employee.ok then return employee end

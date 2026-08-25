@@ -44,11 +44,25 @@ assert(calls[3]:match("INSERT INTO civicos_schema_version"), "migration version 
 function CivicOS.DatabaseAdapter:query(sql)
     if sql:match("information_schema%.tables") then
         return { ok = true, data = {
+            { table_name = "civicos_schema_version" },
             { table_name = "civicos_requests" },
+            { table_name = "civicos_request_comments" },
+            { table_name = "civicos_request_activity" },
             { table_name = "civicos_workorders" },
+            { table_name = "civicos_workorder_assignments" },
+            { table_name = "civicos_workorder_dependencies" },
             { table_name = "civicos_employees" },
+            { table_name = "civicos_employee_certifications" },
             { table_name = "civicos_departments" },
             { table_name = "civicos_sla_events" },
+            { table_name = "civicos_escalations" },
+            { table_name = "civicos_inspections" },
+            { table_name = "civicos_evidence" },
+            { table_name = "civicos_audit_logs" },
+            { table_name = "civicos_notifications" },
+            { table_name = "civicos_crews" },
+            { table_name = "civicos_crew_members" },
+            { table_name = "civicos_contributions" },
             { table_name = "civicos_outbox" },
             { table_name = "civicos_idempotency" },
         } }
@@ -57,6 +71,20 @@ function CivicOS.DatabaseAdapter:query(sql)
 end
 
 local schema = migrations.verifyRequiredTables()
-assert(schema.ok and schema.data.tables == 7, "required table verification should pass")
+assert(schema.ok and schema.data.tables == 21, "required table verification should cover every runtime table")
+
+function CivicOS.DatabaseAdapter:query(sql)
+    if sql:match("information_schema%.tables") then
+        return { ok = true, data = { { table_name = "civicos_schema_version" } } }
+    end
+    return { ok = true, data = {} }
+end
+
+local missingSchema = migrations.verifyRequiredTables()
+assert(
+    not missingSchema.ok
+        and missingSchema.error.details.missingCount == 20,
+    "schema verification should fail when any runtime table is missing"
+)
 
 print("migration split + schema verification regression: PASS")

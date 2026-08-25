@@ -17,11 +17,25 @@ local Migrations = {
 }
 
 local requiredTables = {
+    "civicos_schema_version",
     "civicos_requests",
+    "civicos_request_comments",
+    "civicos_request_activity",
     "civicos_workorders",
+    "civicos_workorder_assignments",
+    "civicos_workorder_dependencies",
     "civicos_employees",
+    "civicos_employee_certifications",
     "civicos_departments",
     "civicos_sla_events",
+    "civicos_escalations",
+    "civicos_inspections",
+    "civicos_evidence",
+    "civicos_audit_logs",
+    "civicos_notifications",
+    "civicos_crews",
+    "civicos_crew_members",
+    "civicos_contributions",
     "civicos_outbox",
     "civicos_idempotency",
 }
@@ -158,9 +172,19 @@ function Migrations.verifyRequiredTables()
     local result = CivicOS.DatabaseAdapter:query([[SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = DATABASE()
-          AND table_name IN ('civicos_requests', 'civicos_workorders',
-              'civicos_employees', 'civicos_departments', 'civicos_sla_events',
-              'civicos_outbox', 'civicos_idempotency')]])
+          AND table_name IN (
+              'civicos_schema_version', 'civicos_requests',
+              'civicos_request_comments', 'civicos_request_activity',
+              'civicos_workorders', 'civicos_workorder_assignments',
+              'civicos_workorder_dependencies', 'civicos_employees',
+              'civicos_employee_certifications', 'civicos_departments',
+              'civicos_sla_events', 'civicos_escalations',
+              'civicos_inspections', 'civicos_evidence',
+              'civicos_audit_logs', 'civicos_notifications',
+              'civicos_crews', 'civicos_crew_members',
+              'civicos_contributions', 'civicos_outbox',
+              'civicos_idempotency'
+          )]])
     if not result.ok then return result end
 
     local found = {}

@@ -29,6 +29,7 @@ function DependencyService:create(source, workorderId, dependsOnId)
     local workorder = CivicOS.WorkOrderRepository:findById(workorderId)
     if not workorder.ok then return workorder end
     local entity = workorder.data[1]
+    if not entity then return errorResult("CORE_NOT_FOUND", "Work order not found.") end
     local auth = CivicOS.Authorization:can(source, "workorder.dependency.manage", { departmentId = entity and entity.department_id })
     if not auth.ok then return auth end
     if workorderId == dependsOnId then return errorResult("WORKORDER_DEPENDENCY_CYCLE", "A work order cannot depend on itself.") end
@@ -44,7 +45,13 @@ function DependencyService:create(source, workorderId, dependsOnId)
 end
 
 function DependencyService:remove(source, workorderId, dependsOnId)
-    local auth = CivicOS.Authorization:can(source, "workorder.dependency.manage", {})
+    local workorder = CivicOS.WorkOrderRepository:findById(workorderId)
+    if not workorder.ok then return workorder end
+    local entity = workorder.data[1]
+    if not entity then return errorResult("CORE_NOT_FOUND", "Work order not found.") end
+    local auth = CivicOS.Authorization:can(source, "workorder.dependency.manage", {
+        departmentId = entity.department_id,
+    })
     if not auth.ok then return auth end
     return CivicOS.WorkOrderDependencyRepository:remove(workorderId, dependsOnId)
 end
