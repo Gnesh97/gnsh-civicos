@@ -29,6 +29,12 @@ introduced must add or amend an entry.
 - Guard concurrent request conversion transactions so only the caller that
   owns the expected version materializes its work-order batch.
 
+### Release packaging
+
+- Exclude nested `web/src` files and local design/development artifacts from
+  release bundles, and verify those paths cannot re-enter the published
+  artifact.
+
 ### Security and schema gate hardening
 
 - Bound technician self-assignment to the caller's persistent identity and

@@ -17,6 +17,8 @@ REQUIRED = {
 }
 FORBIDDEN_PARTS = {".git", ".codebase-memory", "tests", "node_modules", "scripts"}
 FORBIDDEN_SUFFIXES = (".pem", ".key")
+FORBIDDEN_PREFIXES = ("web/src/",)
+FORBIDDEN_NAMES = {".gitignore", "design.json"}
 
 
 def main() -> int:
@@ -39,7 +41,13 @@ def main() -> int:
         if hashlib.sha256(path.read_bytes()).hexdigest() != entry["sha256"]:
             raise SystemExit(f"Manifest hash mismatch: {entry['path']}")
         parts = set(path.relative_to(root).parts)
-        if parts & FORBIDDEN_PARTS or path.suffix in FORBIDDEN_SUFFIXES:
+        relative = path.relative_to(root).as_posix()
+        if (
+            parts & FORBIDDEN_PARTS
+            or path.suffix in FORBIDDEN_SUFFIXES
+            or relative.startswith(FORBIDDEN_PREFIXES)
+            or path.name in FORBIDDEN_NAMES
+        ):
             raise SystemExit(f"Forbidden release path: {entry['path']}")
     print(f"Release OK: {manifest.get('resource')} {manifest.get('version')} ({len(listed)} files)")
     return 0

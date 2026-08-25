@@ -20,8 +20,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "build" / "gnsh-civicos"
-EXCLUDED_DIRS = {".git", ".github", ".codebase-memory", "build", "node_modules", "tests", "scripts"}
+EXCLUDED_DIRS = {
+    ".git",
+    ".github",
+    ".codebase-memory",
+    ".impeccable",
+    "build",
+    "node_modules",
+    "tests",
+    "scripts",
+}
 EXCLUDED_PATHS = {"web/src", "web/package.json", "web/tsconfig.json"}
+EXCLUDED_NAMES = {".gitignore", "design.json"}
 SECRET_NAMES = {".env", ".env.local", ".env.production", "secrets.json", "credentials.json"}
 
 
@@ -42,9 +52,13 @@ def commit() -> str:
 
 def is_excluded(path: Path) -> bool:
     relative = path.relative_to(ROOT).as_posix()
-    if relative in EXCLUDED_PATHS:
+    if relative in EXCLUDED_PATHS or any(
+        relative.startswith(prefix + "/") for prefix in EXCLUDED_PATHS
+    ):
         return True
     if any(part in EXCLUDED_DIRS for part in path.relative_to(ROOT).parts):
+        return True
+    if path.name in EXCLUDED_NAMES:
         return True
     if path.name in SECRET_NAMES or path.name.endswith((".pem", ".key")):
         return True
