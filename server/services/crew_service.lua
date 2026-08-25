@@ -39,12 +39,14 @@ function CrewService:create(source, name, departmentId, metadata)
     if selectedDepartment ~= actor.data.employee.department_id and auth.data.scope ~= "global" then
         return errorResult("CREW_DEPARTMENT_MISMATCH", "Crew must belong to the actor's department.")
     end
+    local validatedMetadata = CivicOS.Validation.metadata(metadata, "metadata")
+    if not validatedMetadata.ok then return validatedMetadata end
     local created = CivicOS.CrewRepository:create({
         reference = reference(),
         name = name,
         departmentId = selectedDepartment,
         leaderEmployeeId = actor.data.employee.id,
-        metadata = metadata,
+        metadata = validatedMetadata.data,
     })
     if not created.ok then return created end
     local member = CivicOS.CrewRepository:addMember(created.data, actor.data.employee.id, "leader")

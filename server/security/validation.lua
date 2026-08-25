@@ -74,6 +74,62 @@ function Validation.object(value, field)
     return { ok = true, data = value }
 end
 
+function Validation.metadata(value, field, options)
+    if value == nil then return { ok = true, data = nil } end
+    if type(value) ~= "table" then
+        return resultError("CORE_INVALID_INPUT", string.format("%s must be an object.", field or "metadata"), { field = field })
+    end
+
+    options = type(options) == "table" and options or {}
+    local limits = CivicOS.Constants and CivicOS.Constants.Limits or {}
+    local maxBytes = tonumber(options.maxBytes) or tonumber(limits.METADATA_BYTES) or 16384
+    local maxDepth = tonumber(options.maxDepth) or 8
+    local seen = {}
+
+    local function inspect(item, depth)
+        local itemType = type(item)
+        if itemType == "table" then
+            if depth > maxDepth then return false, "depth" end
+            if seen[item] then return false, "cycle" end
+            seen[item] = true
+            for key, child in pairs(item) do
+                local keyType = type(key)
+                if keyType ~= "string" and keyType ~= "number" then
+                    seen[item] = nil
+                    return false, "key"
+                end
+                local valid, reason = inspect(child, depth + 1)
+                if not valid then
+                    seen[item] = nil
+                    return false, reason
+                end
+            end
+            seen[item] = nil
+            return true
+        end
+        if itemType == "nil" or itemType == "string" or itemType == "number" or itemType == "boolean" then
+            return true
+        end
+        return false, "type"
+    end
+
+    local structurallyValid, reason = inspect(value, 0)
+    if not structurallyValid then
+        return resultError("CORE_INVALID_INPUT", "Metadata contains an unsupported value.", { field = field, reason = reason })
+    end
+    if type(json) ~= "table" or type(json.encode) ~= "function" then
+        return resultError("CORE_INVALID_INPUT", "Metadata could not be encoded.", { field = field })
+    end
+    local encodedOk, encoded = pcall(json.encode, value)
+    if not encodedOk or type(encoded) ~= "string" then
+        return resultError("CORE_INVALID_INPUT", "Metadata could not be encoded.", { field = field })
+    end
+    if #encoded > maxBytes then
+        return resultError("CORE_INVALID_INPUT", "Metadata is too large.", { field = field, maxBytes = maxBytes })
+    end
+    return { ok = true, data = value }
+end
+
 function Validation.config(config)
     local errors = {}
     if type(config) ~= "table" then

@@ -5,6 +5,13 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Input and lifecycle hardening
+
+- Cancel disconnect grace callbacks by persistent identity so reconnecting on a
+  different FiveM source slot cannot release restored solo assignments.
+- Reject unknown request priorities and invalid, cyclic, oversized, or
+  unsupported metadata at request, inspection, evidence, and crew boundaries.
+
 ### Security and schema gate hardening
 
 - Bound technician self-assignment to the caller's persistent identity and

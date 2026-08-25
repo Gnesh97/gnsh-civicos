@@ -67,7 +67,9 @@ function EvidenceService:add(source, entityType, entityId, evidenceType, uri, me
     if not auth.ok then return auth end
     local validUri = validateUri(uri)
     if not validUri.ok then return validUri end
-    local stored = CivicOS.Evidence:store(source, uri, metadata)
+    local validatedMetadata = CivicOS.Validation.metadata(metadata, "metadata")
+    if not validatedMetadata.ok then return validatedMetadata end
+    local stored = CivicOS.Evidence:store(source, uri, validatedMetadata.data)
     if not stored.ok then return stored end
     local identity = CivicOS.Authorization:identity(source)
     if not identity.ok then return identity end
@@ -77,7 +79,7 @@ function EvidenceService:add(source, entityType, entityId, evidenceType, uri, me
         evidenceType = evidenceType,
         provider = CivicOS.Evidence.name,
         url = stored.data.uri or uri,
-        metadata = stored.data.metadata or metadata,
+        metadata = stored.data.metadata or validatedMetadata.data,
         createdByIdentifier = identity.data.persistentIdentifier,
     })
     if not created.ok then return created end

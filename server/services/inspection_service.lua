@@ -18,6 +18,16 @@ local function authorize(source, entity)
     return CivicOS.Authorization:can(source, "field.inspection.execute", { departmentId = entity.department_id })
 end
 
+local function validateNotesAndMetadata(notes, metadata)
+    local validatedNotes = notes == nil
+        and { ok = true, data = nil }
+        or CivicOS.Validation.string(notes, "notes", { maxLength = CivicOS.Constants.Limits.COMMENT_BODY })
+    if not validatedNotes.ok then return validatedNotes end
+    local validatedMetadata = CivicOS.Validation.metadata(metadata, "metadata")
+    if not validatedMetadata.ok then return validatedMetadata end
+    return { ok = true, data = { notes = validatedNotes.data, metadata = validatedMetadata.data } }
+end
+
 local function authorizeRead(source, entity)
     local identity = CivicOS.Authorization:identity(source)
     if not identity.ok then return identity end
@@ -117,6 +127,8 @@ function InspectionService:pass(source, id, notes, metadata)
     if not entityResult.ok then return entityResult end
     local auth = authorize(source, entityResult.data)
     if not auth.ok then return auth end
+    local validated = validateNotesAndMetadata(notes, metadata)
+    if not validated.ok then return validated end
     local transition = CivicOS.InspectionStateMachine.transition(item, "passed")
     if not transition.ok then return transition end
     local checklist = CivicOS.ChecklistService and CivicOS.ChecklistService:validateValues(entityResult.data)
@@ -130,7 +142,7 @@ function InspectionService:pass(source, id, notes, metadata)
         for _, entry in ipairs(evidence.data) do if entry.type == requiredType then found = true break end end
         if not found then return errorResult("INSPECTION_EVIDENCE_REQUIRED", "Required inspection evidence is missing.", { evidenceType = requiredType }) end
     end
-    local passed = CivicOS.InspectionRepository:update(id, item.status, "passed", notes, metadata)
+    local passed = CivicOS.InspectionRepository:update(id, item.status, "passed", validated.data.notes, validated.data.metadata)
     if not passed.ok then return passed end
     if CivicOS.AuditService then CivicOS.AuditService:record(source, { entityType = "inspection", entityId = id, action = "passed", after = { notes = notes } }) end
     return passed
@@ -145,9 +157,11 @@ function InspectionService:fail(source, id, notes, metadata)
     if not entityResult.ok then return entityResult end
     local auth = authorize(source, entityResult.data)
     if not auth.ok then return auth end
+    local validated = validateNotesAndMetadata(notes, metadata)
+    if not validated.ok then return validated end
     local transition = CivicOS.InspectionStateMachine.transition(item, "failed")
     if not transition.ok then return transition end
-    local updated = CivicOS.InspectionRepository:update(id, item.status, "failed", notes, metadata)
+    local updated = CivicOS.InspectionRepository:update(id, item.status, "failed", validated.data.notes, validated.data.metadata)
     if updated.ok and CivicOS.AuditService then CivicOS.AuditService:record(source, { entityType = "inspection", entityId = id, action = "failed", after = { notes = notes } }) end
     return updated
 end
@@ -161,9 +175,13 @@ function InspectionService:rework(source, id, notes)
     if not entityResult.ok then return entityResult end
     local auth = authorize(source, entityResult.data)
     if not auth.ok then return auth end
+    local validatedNotes = notes == nil
+        and { ok = true, data = nil }
+        or CivicOS.Validation.string(notes, "notes", { maxLength = CivicOS.Constants.Limits.COMMENT_BODY })
+    if not validatedNotes.ok then return validatedNotes end
     local transition = CivicOS.InspectionStateMachine.transition(item, "rework_required")
     if not transition.ok then return transition end
-    local updated = CivicOS.InspectionRepository:update(id, item.status, "rework_required", notes, item.metadata)
+    local updated = CivicOS.InspectionRepository:update(id, item.status, "rework_required", validatedNotes.data, item.metadata)
     if not updated.ok then return updated end
     if entityResult.data.status == CivicOS.Enums.WorkOrderStatus.PENDING_INSPECTION then
         CivicOS.WorkOrderRepository:updateStatus(entityResult.data.id, entityResult.data.version, CivicOS.Enums.WorkOrderStatus.REWORK_REQUIRED)

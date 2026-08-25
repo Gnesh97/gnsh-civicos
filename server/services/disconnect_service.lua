@@ -1,7 +1,7 @@
 local CivicOS = rawget(_G, "CivicOS") or {}
 _G.CivicOS = CivicOS
 
-local DisconnectService = { _started = false, _sessions = {} }
+local DisconnectService = { _started = false, _sessions = {}, _pending = {} }
 
 local function errorResult(code, message, details)
     return CivicOS.Result.err(code, message, details)
@@ -54,13 +54,31 @@ function DisconnectService:releaseSoloAssignments(session)
 end
 
 function DisconnectService:onLoaded(identity)
-    if not identity or not identity.source then return end
-    local previous = self._sessions[identity.source]
-    local reconnecting = previous and previous.persistentIdentifier == identity.persistentIdentifier
-    self._sessions[identity.source] = identity
-    local employee = CivicOS.EmployeeRepository:findByIdentifier(identity.persistentIdentifier)
+    if not identity or not identity.source or not identity.persistentIdentifier then return end
+    local source = tonumber(identity.source) or identity.source
+    local previous = self._sessions[source]
+    local pending = self._pending[identity.persistentIdentifier]
+    local reconnecting = (previous and previous.persistentIdentifier == identity.persistentIdentifier) or pending ~= nil
+
+    -- A reconnect can receive a different FiveM source slot.  Cancel the
+    -- identifier-scoped grace callback before installing the new session so a
+    -- stale timeout cannot release the restored assignment.
+    if pending then
+        self._pending[identity.persistentIdentifier] = nil
+        if self._sessions[pending.source] == pending then
+            self._sessions[pending.source] = nil
+        end
+    end
+
+    local session = {
+        source = source,
+        persistentIdentifier = identity.persistentIdentifier,
+        job = identity.job,
+    }
+    self._sessions[source] = session
+    local employee = CivicOS.EmployeeRepository:findByIdentifier(session.persistentIdentifier)
     if employee.ok and employee.data[1] then
-        local availability = identity.job and identity.job.onDuty and "available" or "offline"
+        local availability = session.job and session.job.onDuty and "available" or "offline"
         CivicOS.EmployeeRepository:updateAvailability(employee.data[1].id, availability)
         if CivicOS.CrewRepository and CivicOS.CrewRepository.restoreMemberStatus then
             CivicOS.CrewRepository:restoreMemberStatus(employee.data[1].id)
@@ -68,7 +86,7 @@ function DisconnectService:onLoaded(identity)
         local workorders = CivicOS.WorkOrderRepository:list({ employeeId = employee.data[1].id, page = 1, pageSize = 100 })
         if reconnecting and workorders.ok and CivicOS.NotificationService then
             for _, workorder in ipairs(workorders.data) do
-                CivicOS.NotificationService:create(identity.persistentIdentifier, "reconnect", "notify.reconnect.title", "notify.reconnect.body", { workorderId = workorder.id }, identity.source)
+                CivicOS.NotificationService:create(session.persistentIdentifier, "reconnect", "notify.reconnect.title", "notify.reconnect.body", { workorderId = workorder.id }, source)
             end
         end
     end
@@ -76,18 +94,20 @@ end
 
 function DisconnectService:onUnloaded(sourceOrIdentity)
     local source = type(sourceOrIdentity) == "table" and sourceOrIdentity.source or tonumber(sourceOrIdentity)
+    source = tonumber(source) or source
     local session = source and self._sessions[source]
     if not session then return end
+    self._sessions[source] = nil
+    self._pending[session.persistentIdentifier] = session
     local employee = session.persistentIdentifier and CivicOS.EmployeeRepository:findByIdentifier(session.persistentIdentifier)
     if employee and employee.ok and employee.data[1] then
         CivicOS.EmployeeRepository:updateAvailability(employee.data[1].id, "offline")
     end
     local grace = CivicOS.Config and CivicOS.Config.Recovery and CivicOS.Config.Recovery.DisconnectGraceSeconds or 300
     delayed(grace, function()
-        if self._sessions[source] == session then
-            self._sessions[source] = nil
-            self:releaseSoloAssignments(session)
-        end
+        if self._pending[session.persistentIdentifier] ~= session then return end
+        self._pending[session.persistentIdentifier] = nil
+        self:releaseSoloAssignments(session)
     end)
 end
 

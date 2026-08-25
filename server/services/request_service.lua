@@ -97,12 +97,20 @@ function RequestService:create(source, input, context)
     if not code then return errorResult("CATALOG_NOT_FOUND", "Service code is required.") end
     local catalog = CivicOS.ServiceCatalogService:get(code, sourceType)
     if not catalog.ok then return catalog end
+    local priority = input.priority
+    if priority ~= nil then
+        local validatedPriority = CivicOS.Validation.enum(priority, "priority", CivicOS.Enums.Priority)
+        if not validatedPriority.ok then return validatedPriority end
+        priority = validatedPriority.data
+    end
     local title = CivicOS.Validation.string(input.title, "title", { required = true, maxLength = CivicOS.Constants.Limits.REQUEST_TITLE })
     if not title.ok then return title end
     local description = CivicOS.Validation.string(input.description, "description", { required = true, maxLength = CivicOS.Constants.Limits.REQUEST_DESCRIPTION })
     if not description.ok then return description end
     local location = CivicOS.Validation.vector(input.location, "location")
     if not location.ok then return location end
+    local metadata = CivicOS.Validation.metadata(input.metadata, "metadata")
+    if not metadata.ok then return metadata end
     local identifier = actorIdentifier(source, context)
     local limited = CivicOS.RateLimit:allow(identifier, "request_create")
     if not limited.ok then return limited end
@@ -120,11 +128,11 @@ function RequestService:create(source, input, context)
         subcategory = catalog.data.subcategory,
         title = title.data,
         description = description.data,
-        priority = input.priority or catalog.data.defaultPriority,
+        priority = priority or catalog.data.defaultPriority,
         status = CivicOS.Enums.RequestStatus.SUBMITTED,
         departmentId = department.data.id,
         location = location.data,
-        metadata = input.metadata,
+        metadata = metadata.data,
     })
     if not created.ok then return created end
     local entity = {
