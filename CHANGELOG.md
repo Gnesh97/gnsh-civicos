@@ -26,6 +26,8 @@ introduced must add or amend an entry.
 - Materialize converted work orders directly as `unassigned` inside the
   conversion transaction, eliminating a race-prone follow-up staging loop.
 - Document the invoking-resource ownership rule for integration exports.
+- Guard concurrent request conversion transactions so only the caller that
+  owns the expected version materializes its work-order batch.
 
 ### Security and schema gate hardening
 

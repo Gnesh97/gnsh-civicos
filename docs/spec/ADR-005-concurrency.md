@@ -16,7 +16,9 @@ Persistent Request and Work Order records carry an integer `version`. Mutations
 include `expectedVersion` and update atomically only when it matches; conflicts
 return a stable concurrency error. Public integration calls accept an
 idempotency key. Field actions use one-time, short-lived server-issued action
-tokens. Side effects are recorded with correlation/idempotency identifiers.
+tokens. Request conversion claims the request version before a guarded batch
+insert, so concurrent conversion attempts cannot materialize duplicate child
+work orders. Side effects are recorded with correlation/idempotency identifiers.
 
 ## Consequences
 

@@ -194,6 +194,15 @@ function WorkOrderService:convert(source, requestId, expectedVersion, serviceCod
     end
     local workorders = CivicOS.WorkOrderRepository:listByRequest(requestId)
     if not workorders.ok then return workorders end
+    local materializedReferences = {}
+    for _, workorder in ipairs(workorders.data or {}) do
+        materializedReferences[workorder.reference] = true
+    end
+    for _, item in ipairs(materialized) do
+        if not materializedReferences[item.reference] then
+            return errorResult("CORE_VERSION_CONFLICT", "Request conversion conflict.", { id = requestId })
+        end
+    end
     CivicOS.RequestRepository:addActivity(requestId, actorIdentifier(auth), "workorder_created", { count = #materialized })
     return { ok = true, data = workorders.data }
 end

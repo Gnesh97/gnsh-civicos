@@ -89,25 +89,39 @@ function WorkOrderRepository:create(dto)
 end
 
 function WorkOrderRepository:createManyForRequest(requestId, requestVersion, items)
-    local statements = {}
+    local statements = {
+        {
+            query = "UPDATE civicos_requests SET status = 'converted', version = version + 1 WHERE id = ? AND version = ? AND NOT EXISTS (SELECT 1 FROM civicos_workorders WHERE request_id = ?)",
+            values = { requestId, requestVersion, requestId },
+        },
+    }
+    local selects, values = {}, {}
     for _, dto in ipairs(items or {}) do
+        selects[#selects + 1] = [[SELECT ?, ?, ?, ?, ?, 'unassigned', NULL, NULL, ?, ?, ?, 1
+            FROM civicos_requests
+            WHERE id = ? AND version = ? AND status = 'converted'
+              AND NOT EXISTS (SELECT 1 FROM civicos_workorders WHERE request_id = ?)]]
+        values[#values + 1] = requestId
+        values[#values + 1] = dto.reference
+        values[#values + 1] = dto.departmentId
+        values[#values + 1] = dto.templateKey
+        values[#values + 1] = dto.priority
+        values[#values + 1] = Repository.encode(dto.location)
+        values[#values + 1] = Repository.encode(dto.checklist)
+        values[#values + 1] = Repository.encode(dto.metadata)
+        values[#values + 1] = requestId
+        values[#values + 1] = requestVersion + 1
+        values[#values + 1] = requestId
+    end
+    if #selects > 0 then
         statements[#statements + 1] = {
             query = [[INSERT INTO civicos_workorders
                 (request_id, reference, department_id, template_key, priority, status,
                  assigned_employee_id, assigned_crew_id, location_json, checklist_json, metadata, version)
-                SELECT ?, ?, ?, ?, ?, 'unassigned', NULL, NULL, ?, ?, ?, 1
-                FROM civicos_requests WHERE id = ? AND version = ?]],
-            values = {
-                requestId, dto.reference, dto.departmentId, dto.templateKey, dto.priority,
-                Repository.encode(dto.location), Repository.encode(dto.checklist), Repository.encode(dto.metadata),
-                requestId, requestVersion,
-            },
+            ]] .. table.concat(selects, "\nUNION ALL\n"),
+            values = values,
         }
     end
-    statements[#statements + 1] = {
-        query = "UPDATE civicos_requests SET status = 'converted', version = version + 1 WHERE id = ? AND version = ?",
-        values = { requestId, requestVersion },
-    }
     return Repository.db():transaction(statements)
 end
 
