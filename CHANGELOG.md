@@ -18,6 +18,9 @@ introduced must add or amend an entry.
   sizes before they reach SQL/API responses.
 - Hide internal comment activity from both request-detail and timeline read
   models while retaining it for authorized staff views.
+- Restrict incident work-order assignment and dependency details to staff
+  read models; citizen incident reads now remain independent of dependency
+  internals.
 
 ### Security and schema gate hardening
 
