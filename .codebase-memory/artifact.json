@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "571b282862b72df92d4426c0bfe3c7057195c191",
-    "indexed_at": "2026-08-25T06:39:30Z",
+    "commit": "21a50e40a9cc844d03e2814b8d55ca601b9f2d11",
+    "indexed_at": "2026-08-25T06:45:25Z",
     "project": "C-Users-Gnesh-Desktop-txData-QBCore_70C731.base-resources-standalone-gnsh-civicos",
-    "nodes": 2001,
-    "edges": 6258,
-    "original_size": 10092544,
-    "compressed_size": 1217420,
+    "nodes": 2005,
+    "edges": 6245,
+    "original_size": 10158080,
+    "compressed_size": 1217695,
     "compression_level": 3
 }

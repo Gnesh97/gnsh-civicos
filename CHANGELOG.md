@@ -16,6 +16,8 @@ introduced must add or amend an entry.
 - Pin request/work-order list queries to the actor's own or department scope,
   filter internal activity from citizen detail DTOs, and clamp invalid page
   sizes before they reach SQL/API responses.
+- Hide internal comment activity from both request-detail and timeline read
+  models while retaining it for authorized staff views.
 
 ### Security and schema gate hardening
 

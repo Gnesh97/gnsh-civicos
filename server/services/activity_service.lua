@@ -12,6 +12,15 @@ local publicTypes = {
     sla_met = true,
 }
 
+local function publicData(activity)
+    if not activity or not publicTypes[activity.activity_type] then return nil end
+    local data = CivicOS.Repository.decode(activity.public_data)
+    if activity.activity_type == "comment_added" and type(data) == "table" and data.visibility == "internal" then
+        return nil
+    end
+    return data
+end
+
 local function errorResult(code, message, details)
     return CivicOS.Result.err(code, message, details)
 end
@@ -30,12 +39,13 @@ function ActivityService:request(source, requestId, page, pageSize)
     if not result.ok then return result end
     local items = {}
     for _, activity in ipairs(result.data) do
-        if staff.ok or publicTypes[activity.activity_type] then
+        local data = staff.ok and CivicOS.Repository.decode(activity.public_data) or publicData(activity)
+        if staff.ok or data ~= nil then
             items[#items + 1] = {
                 id = activity.id,
                 requestId = activity.request_id,
                 type = activity.activity_type,
-                data = CivicOS.Repository.decode(activity.public_data),
+                data = data,
                 createdAt = activity.created_at,
             }
         end

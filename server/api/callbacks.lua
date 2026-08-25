@@ -21,6 +21,15 @@ local publicActivityTypes = {
     sla_met = true,
 }
 
+local function publicActivityData(item)
+    if not item or not publicActivityTypes[item.activity_type] then return nil end
+    local data = CivicOS.Repository.decode(item.public_data)
+    if item.activity_type == "comment_added" and type(data) == "table" and data.visibility == "internal" then
+        return nil
+    end
+    return data
+end
+
 local function callbackTraceback(message)
     local debugLibrary = rawget(_G, "debug")
     if type(debugLibrary) == "table" and type(debugLibrary.traceback) == "function" then
@@ -54,12 +63,13 @@ local function requestDetail(source, id, staff)
     if not activity.ok then return activity end
     local safeActivity = {}
     for _, item in ipairs(activity.data or {}) do
-        if canViewInternal or publicActivityTypes[item.activity_type] then
+        local publicData = canViewInternal and CivicOS.Repository.decode(item.public_data) or publicActivityData(item)
+        if canViewInternal or publicData ~= nil then
             safeActivity[#safeActivity + 1] = {
                 id = item.id,
                 requestId = item.request_id,
                 activityType = item.activity_type,
-                publicData = CivicOS.Repository.decode(item.public_data),
+                publicData = publicData,
                 createdAt = item.created_at,
             }
         end

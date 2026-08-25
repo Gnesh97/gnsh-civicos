@@ -18,7 +18,8 @@ _G.CivicOS = {
                 ok = true,
                 data = {
                     { id = 1, request_id = 7, activity_type = "created", public_data = "public", created_at = "now" },
-                    { id = 2, request_id = 7, activity_type = "internal_note", public_data = "secret", created_at = "now" },
+                    { id = 2, request_id = 7, activity_type = "comment_added", public_data = { visibility = "internal" }, created_at = "now" },
+                    { id = 3, request_id = 7, activity_type = "internal_note", public_data = "secret", created_at = "now" },
                 },
             }
         end,
@@ -44,7 +45,7 @@ _G.CivicOS = {
         end,
     },
     Repository = {
-        decode = function(_, value) return value end,
+        decode = function(value) return value end,
     },
     DTO = {
         citizenRequestDetail = function(_, _, activity)
@@ -59,5 +60,9 @@ local api = dofile("server/api/callbacks.lua")
 local result = api.handlers["request.get"](1, { id = 7 })
 assert(result.ok, "citizen request detail should succeed")
 assert(#capturedActivity == 1 and capturedActivity[1].activityType == "created", "internal activity must be filtered from citizen detail")
+
+local activityService = dofile("server/services/activity_service.lua")
+local activityResult = activityService:request(1, 7, 1, 100)
+assert(activityResult.ok and #activityResult.data == 1 and activityResult.data[1].type == "created", "activity endpoint must filter internal comments")
 
 print("request detail scope regression: PASS")
