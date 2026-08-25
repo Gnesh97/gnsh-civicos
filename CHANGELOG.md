@@ -5,6 +5,11 @@ introduced must add or amend an entry.
 
 ## [Unreleased]
 
+### Repository metadata
+
+- Refreshed the shared codebase-memory graph artifact after the framework
+  parity and verification hardening pass.
+
 ### Framework parity and verification hardening
 
 - Corrected QBCore player money/duty method calls to use the framework's
