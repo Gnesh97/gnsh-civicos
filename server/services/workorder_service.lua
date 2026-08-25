@@ -310,7 +310,9 @@ function WorkOrderService:transition(source, id, expectedVersion, targetStatus, 
         departmentId = entity.department_id,
     })
     if not auth.ok then auth = crewMemberAuth(source, entity, "workorder.update.assigned") or auth end
-    if not auth.ok then auth = CivicOS.Authorization:can(source, "workorder.read.department", { departmentId = entity.department_id }) end
+    if not auth.ok then
+        auth = CivicOS.Authorization:can(source, "workorder.update.assigned", { departmentId = entity.department_id })
+    end
     if not auth.ok then return auth end
     if tonumber(expectedVersion) ~= tonumber(entity.version) then return errorResult("CORE_VERSION_CONFLICT", "Work order version conflict.") end
     local statuses = workOrderStatuses()

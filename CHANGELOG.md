@@ -11,6 +11,8 @@ introduced must add or amend an entry.
   different FiveM source slot cannot release restored solo assignments.
 - Reject unknown request priorities and invalid, cyclic, oversized, or
   unsupported metadata at request, inspection, evidence, and crew boundaries.
+- Keep read permissions from widening evidence attachment or work-order
+  transition mutations; write actions now require their own permission key.
 
 ### Security and schema gate hardening
 

@@ -40,7 +40,7 @@ local function entityAuth(source, entityType, entityId, permission)
         local assigned = employee and employee.ok and employee.data[1] and employee.data[1].persistent_identifier
         local resource = { assignedIdentifier = assigned, departmentId = entity.department_id }
         local auth = CivicOS.Authorization:can(source, permission, resource)
-        if not auth.ok and (permission == "workorder.read.assigned" or permission == "field.evidence.attach") then
+        if not auth.ok and permission == "workorder.read.assigned" then
             auth = CivicOS.Authorization:can(source, "workorder.read.department", { departmentId = entity.department_id })
         end
         return auth, entity
