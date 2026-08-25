@@ -95,7 +95,7 @@ function WorkOrderRepository:createManyForRequest(requestId, requestVersion, ite
             query = [[INSERT INTO civicos_workorders
                 (request_id, reference, department_id, template_key, priority, status,
                  assigned_employee_id, assigned_crew_id, location_json, checklist_json, metadata, version)
-                SELECT ?, ?, ?, ?, ?, 'created', NULL, NULL, ?, ?, ?, 1
+                SELECT ?, ?, ?, ?, ?, 'unassigned', NULL, NULL, ?, ?, ?, 1
                 FROM civicos_requests WHERE id = ? AND version = ?]],
             values = {
                 requestId, dto.reference, dto.departmentId, dto.templateKey, dto.priority,

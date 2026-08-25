@@ -159,12 +159,35 @@ function RequestService:_authorizeRead(source, entity)
     return CivicOS.Authorization:can(source, "request.read.department", { departmentId = entity.department_id })
 end
 
+function RequestService:_authorizeIntegration(entity, context)
+    if type(context) ~= "table"
+        or context.sourceType ~= "integration"
+        or type(context.sourceResource) ~= "string"
+        or context.sourceResource == "" then
+        return errorResult("AUTH_FORBIDDEN", "Integration context is invalid.")
+    end
+    if entity.source ~= "integration" or entity.source_resource ~= context.sourceResource then
+        return errorResult("AUTH_FORBIDDEN", "Integration is not the owner of this request.")
+    end
+    return { ok = true, data = true }
+end
+
 function RequestService:get(source, id)
     local result = CivicOS.RequestRepository:findById(id)
     if not result.ok then return result end
     local entity = result.data[1]
     if not entity then return errorResult("CORE_NOT_FOUND", "Request not found.") end
     local authorized = self:_authorizeRead(source, entity)
+    if not authorized.ok then return authorized end
+    return { ok = true, data = CivicOS.RequestDomain.public(entity) }
+end
+
+function RequestService:integrationGet(id, context)
+    local result = CivicOS.RequestRepository:findById(id)
+    if not result.ok then return result end
+    local entity = result.data[1]
+    if not entity then return errorResult("CORE_NOT_FOUND", "Request not found.") end
+    local authorized = self:_authorizeIntegration(entity, context)
     if not authorized.ok then return authorized end
     return { ok = true, data = CivicOS.RequestDomain.public(entity) }
 end
@@ -268,9 +291,8 @@ function RequestService:integrationPatch(id, expectedVersion, patch, context)
     if not entityResult.ok then return entityResult end
     local entity = entityResult.data[1]
     if not entity then return errorResult("CORE_NOT_FOUND", "Request not found.") end
-    if entity.source ~= "integration" or (context.sourceResource and entity.source_resource ~= context.sourceResource) then
-        return errorResult("AUTH_FORBIDDEN", "Integration cannot update this request.")
-    end
+    local authorized = self:_authorizeIntegration(entity, context)
+    if not authorized.ok then return authorized end
     if entity.status ~= CivicOS.Enums.RequestStatus.SUBMITTED and entity.status ~= CivicOS.Enums.RequestStatus.DRAFT then
         return errorResult("REQUEST_INVALID_STATE", "Request cannot be edited in its current state.")
     end
@@ -292,9 +314,8 @@ function RequestService:integrationTransition(id, expectedVersion, targetStatus,
     if not entityResult.ok then return entityResult end
     local entity = entityResult.data[1]
     if not entity then return errorResult("CORE_NOT_FOUND", "Request not found.") end
-    if entity.source ~= "integration" or (context.sourceResource and entity.source_resource ~= context.sourceResource) then
-        return errorResult("AUTH_FORBIDDEN", "Integration cannot transition this request.")
-    end
+    local authorized = self:_authorizeIntegration(entity, context)
+    if not authorized.ok then return authorized end
     if targetStatus ~= CivicOS.Enums.RequestStatus.RESOLVED and targetStatus ~= CivicOS.Enums.RequestStatus.CLOSED then
         return errorResult("REQUEST_INVALID_STATE", "Integration transition is restricted.")
     end

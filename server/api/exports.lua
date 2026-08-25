@@ -7,56 +7,77 @@ local function contextOf(context)
     local input = type(context) == "table" and context or {}
     local result = {}
     for key, value in pairs(input) do result[key] = value end
+    local getInvokingResource = rawget(_G, "GetInvokingResource")
+    local invokingResource = type(getInvokingResource) == "function" and getInvokingResource() or nil
+    if type(invokingResource) ~= "string" or invokingResource == "" then
+        return nil, CivicOS.Result.err("AUTH_FORBIDDEN", "Public exports require an invoking resource.")
+    end
     result.sourceType = "integration"
-    result.sourceResource = result.sourceResource or "external"
-    result.actorIdentifier = result.actorIdentifier or ("integration:" .. result.sourceResource)
-    return result
+    result.sourceResource = invokingResource
+    result.actorIdentifier = "integration:" .. invokingResource
+    return result, nil
 end
 
 local function idempotent(name, context, payload, handler)
-    context = contextOf(context)
+    if type(context) ~= "table" or type(context.sourceResource) ~= "string" then
+        return CivicOS.Result.err("AUTH_FORBIDDEN", "Public export context is invalid.")
+    end
     if not context.idempotencyKey then return CivicOS.Result.err("IDEMPOTENCY_REQUIRED", "idempotencyKey is required for integration mutations.") end
     return CivicOS.Idempotency:run("export:" .. name .. ":" .. context.sourceResource, context.idempotencyKey, payload, handler)
 end
 
 function Exports.CreateRequest(input, context)
-    context = contextOf(context)
+    local normalized, failure = contextOf(context)
+    if not normalized then return failure end
+    context = normalized
     return idempotent("CreateRequest", context, input, function()
         return CivicOS.RequestService:create(nil, input, context)
     end)
 end
 
 function Exports.GetRequest(id)
-    return CivicOS.RequestService:get(nil, id)
+    local context, failure = contextOf(nil)
+    if not context then return failure end
+    return CivicOS.RequestService:integrationGet(id, context)
 end
 
 function Exports.UpdateRequest(id, expectedVersion, patch, context)
-    context = contextOf(context)
+    local normalized, failure = contextOf(context)
+    if not normalized then return failure end
+    context = normalized
     return idempotent("UpdateRequest", context, { id = id, expectedVersion = expectedVersion, patch = patch }, function()
         return CivicOS.RequestService:integrationPatch(id, expectedVersion, patch, context)
     end)
 end
 
 function Exports.ResolveRequest(id, expectedVersion, reason, context)
-    context = contextOf(context)
+    local normalized, failure = contextOf(context)
+    if not normalized then return failure end
+    context = normalized
     return idempotent("ResolveRequest", context, { id = id, expectedVersion = expectedVersion, reason = reason }, function()
         return CivicOS.RequestService:integrationTransition(id, expectedVersion, CivicOS.Enums.RequestStatus.RESOLVED, reason, context)
     end)
 end
 
 function Exports.CreateWorkOrder(requestId, expectedVersion, serviceCode, overrides, context)
-    context = contextOf(context)
+    local normalized, failure = contextOf(context)
+    if not normalized then return failure end
+    context = normalized
     return idempotent("CreateWorkOrder", context, { requestId = requestId, expectedVersion = expectedVersion, serviceCode = serviceCode, overrides = overrides }, function()
         return CivicOS.WorkOrderService:convert(nil, requestId, expectedVersion, serviceCode, overrides, context)
     end)
 end
 
 function Exports.GetWorkOrder(id)
-    return CivicOS.WorkOrderService:get(nil, id)
+    local context, failure = contextOf(nil)
+    if not context then return failure end
+    return CivicOS.WorkOrderService:integrationGet(id, context)
 end
 
 function Exports.AddComment(requestId, body, context)
-    context = contextOf(context)
+    local normalized, failure = contextOf(context)
+    if not normalized then return failure end
+    context = normalized
     return idempotent("AddComment", context, { requestId = requestId, body = body }, function()
         local request = CivicOS.RequestRepository:findById(requestId)
         if not request.ok then return request end

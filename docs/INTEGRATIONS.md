@@ -13,8 +13,11 @@ and implemented in `server/api/exports.lua`:
 - `CreateWorkOrder`, `GetWorkOrder`, `AddComment`;
 - `GetHealth`.
 
-Mutation calls require a scoped `sourceResource`, an `actorIdentifier`, and a
-unique `idempotencyKey`. Reusing the same key with a different payload is an
+Mutation calls require a unique `idempotencyKey`. CivicOS derives the owning
+`sourceResource` from FiveM's server-side invoking-resource context and derives
+the audit actor as `integration:<resource>`; caller-supplied values for either
+field are ignored. `GetRequest` and `GetWorkOrder` are limited to records owned
+by that invoking resource. Reusing the same key with a different payload is an
 idempotency collision and is rejected.
 
 ## Examples

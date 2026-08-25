@@ -21,6 +21,11 @@ introduced must add or amend an entry.
 - Restrict incident work-order assignment and dependency details to staff
   read models; citizen incident reads now remain independent of dependency
   internals.
+- Bind public integration exports to FiveM's invoking resource and enforce
+  owner checks for request/work-order reads and mutations.
+- Materialize converted work orders directly as `unassigned` inside the
+  conversion transaction, eliminating a race-prone follow-up staging loop.
+- Document the invoking-resource ownership rule for integration exports.
 
 ### Security and schema gate hardening
 

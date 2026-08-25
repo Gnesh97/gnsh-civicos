@@ -141,10 +141,14 @@ function WorkOrderService:convert(source, requestId, expectedVersion, serviceCod
         if not auth.ok then return auth end
     else
         context = type(context) == "table" and context or {}
-        if request.source ~= "integration" or (context.sourceResource and request.source_resource ~= context.sourceResource) then
+        if context.sourceType ~= "integration"
+            or type(context.sourceResource) ~= "string"
+            or context.sourceResource == ""
+            or request.source ~= "integration"
+            or request.source_resource ~= context.sourceResource then
             return errorResult("AUTH_FORBIDDEN", "Integration cannot convert this request.")
         end
-        auth = { ok = true, data = { identity = { persistentIdentifier = context.actorIdentifier or "integration" } } }
+        auth = { ok = true, data = { identity = { persistentIdentifier = "integration:" .. context.sourceResource } } }
     end
     if tonumber(expectedVersion) ~= tonumber(request.version) then return errorResult("CORE_VERSION_CONFLICT", "Request version conflict.") end
     local transition = CivicOS.RequestStateMachine.transition(request, CivicOS.Enums.RequestStatus.CONVERTED, { actorIdentifier = actorIdentifier(auth) })
@@ -190,15 +194,6 @@ function WorkOrderService:convert(source, requestId, expectedVersion, serviceCod
     end
     local workorders = CivicOS.WorkOrderRepository:listByRequest(requestId)
     if not workorders.ok then return workorders end
-    for _, workorder in ipairs(workorders.data) do
-        if workorder.status == CivicOS.Enums.WorkOrderStatus.CREATED then
-            local staged = CivicOS.WorkOrderRepository:updateStatus(workorder.id, workorder.version, CivicOS.Enums.WorkOrderStatus.UNASSIGNED)
-            if staged.ok then
-                workorder.status = CivicOS.Enums.WorkOrderStatus.UNASSIGNED
-                workorder.version = workorder.version + 1
-            end
-        end
-    end
     CivicOS.RequestRepository:addActivity(requestId, actorIdentifier(auth), "workorder_created", { count = #materialized })
     return { ok = true, data = workorders.data }
 end
@@ -263,6 +258,27 @@ function WorkOrderService:get(source, id)
     if not auth.ok then auth = crewMemberAuth(source, entity, "workorder.read.assigned") or auth end
     if not auth.ok then auth = CivicOS.Authorization:can(source, "workorder.read.department", { departmentId = entity.department_id }) end
     if not auth.ok then return auth end
+    return { ok = true, data = CivicOS.WorkOrderDomain.public(entity) }
+end
+
+function WorkOrderService:integrationGet(id, context)
+    if type(context) ~= "table"
+        or context.sourceType ~= "integration"
+        or type(context.sourceResource) ~= "string"
+        or context.sourceResource == "" then
+        return errorResult("AUTH_FORBIDDEN", "Integration context is invalid.")
+    end
+    local result = CivicOS.WorkOrderRepository:findById(id)
+    if not result.ok then return result end
+    local entity = result.data[1]
+    if not entity then return errorResult("CORE_NOT_FOUND", "Work order not found.") end
+    local request = CivicOS.RequestRepository:findById(entity.request_id)
+    if not request.ok then return request end
+    local requestEntity = request.data[1]
+    if not requestEntity then return errorResult("CORE_NOT_FOUND", "Source request not found.") end
+    if requestEntity.source ~= "integration" or requestEntity.source_resource ~= context.sourceResource then
+        return errorResult("AUTH_FORBIDDEN", "Integration is not the owner of this work order.")
+    end
     return { ok = true, data = CivicOS.WorkOrderDomain.public(entity) }
 end
 

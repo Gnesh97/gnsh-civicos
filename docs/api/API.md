@@ -11,7 +11,6 @@ local result = exports["gnsh-civicos"]:CreateRequest({
     description = "The intersection is dark.",
     location = { x = 100.0, y = 200.0, z = 30.0 },
 }, {
-    sourceResource = "signalgrid",
     externalRef = "signal-123",
     idempotencyKey = "signal-123-v1",
 })
@@ -32,4 +31,7 @@ All results use the standard `{ ok = true, data = ... }` or
 `{ ok = false, error = { code, message, details } }` envelope. `expectedVersion`
 is mandatory for optimistic concurrency operations. Event delivery uses the
 persistent outbox and is at-least-once; consumers should deduplicate by
-`correlationId`.
+`correlationId`. The export boundary derives the integration owner from
+FiveM's invoking resource; `sourceResource` and `actorIdentifier` are not
+caller-controlled inputs. Read exports return only that resource's own
+integration records.
