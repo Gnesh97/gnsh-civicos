@@ -13,6 +13,8 @@ branch. Automated tests and load execution are intentionally deferred to the
 final verification phase, while the scenarios are documented under
 [`tests/scenarios`](tests/scenarios).
 
+> `main` is kept in sync with `dev` (fast-forwarded to the latest implemented phase).
+
 Implemented capabilities include:
 
 - citizen request lifecycle and configurable service catalog;
