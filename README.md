@@ -1,93 +1,66 @@
-# CivicOS
+# gnsh-civicos (CivicOS)
 
-CivicOS is a server-authoritative municipal operations core for FiveM. It
-connects citizen requests to departments, work orders, field operations, SLA
-tracking, inspections, crews, audit history, and integration APIs without
-coupling the domain layer to one framework.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Version](https://img.shields.io/badge/version-0.1.0-informational.svg)
 
-## Current status
+Server-authoritative municipal operations core for FiveM. CivicOS connects citizen requests to departments, work orders, field operations, SLA tracking, inspections, crews, audit history, and integration APIs without coupling the domain layer to a single framework.
 
-Implementation phases S00–S16 are in place on the `dev` branch. The GitHub
-repository keeps `main` as the default branch; `dev` is the active development
-branch. Automated tests and load execution are intentionally deferred to the
-final verification phase, while the scenarios are documented under
-[`tests/scenarios`](tests/scenarios).
+## Capabilities
 
-> `main` is kept in sync with `dev` (fast-forwarded to the latest implemented phase).
-
-Implemented capabilities include:
-
-- citizen request lifecycle and configurable service catalog;
-- QBCore, Qbox, ESX, and standalone framework adapters;
-- departments, employees, duty/availability, RBAC, and scoped authorization;
-- work-order conversion, atomic employee/crew assignment, dependencies, and
-  field checklists;
-- server-side distance checks, one-time action tokens, inventory/notify/target
-  provider fallbacks, and exploit guards;
-- inspection/evidence gates, persistent SLA/escalation/notification workers,
-  audit/activity timelines, analytics, health diagnostics, and seed data;
-- public exports, idempotency, domain events, outbox delivery/dead-lettering,
-  restart recovery, disconnect grace handling, and retention cleanup.
+- **Citizen Request & Service Catalog Lifecycle:** Configurable service catalog (`config/service_catalog.lua`), priority validation, public/internal comment separation, and atomic request-to-work-order conversion.
+- **Departments, Crews & RBAC:** Employees, duty/availability states, scoped department authorization, crew assignments, and disconnect/reconnect grace handling.
+- **Work Orders & Field Operations:** Work-order templates, dependencies, field checklists, server-side distance checks, one-time action tokens, and inspection/evidence gates.
+- **SLA, Escalations & Observability:** Persistent SLA and escalation tracking, audit/activity timelines, analytics, health diagnostics (`/civicos_health`, `/civicos_diagnostics`), and data retention policies.
+- **Framework & Optional Provider Adapters:** Automatic or explicit selection across `qbcore`, `qbox`, `esx`, and `standalone`, with `oxmysql` persistence (`sql/001_initial.sql`–`010_retention_indexes.sql`) and safe `none` fallbacks for inventory, target, notify, and evidence providers.
+- **Integration Bus & Idempotency:** Invoking-resource-bound public exports, idempotency keys, domain events, outbox delivery/dead-lettering, and startup recovery.
 
 ## Installation
 
-1. Copy this resource to the server resources directory.
-2. Start `oxmysql` before `gnsh-civicos`.
+1. Copy `gnsh-civicos` into your server's `resources/` directory.
+2. Ensure `oxmysql` and your framework (`qb-core`, `qbx_core`, or `es_extended`, if used) start before `gnsh-civicos`.
 3. Add `ensure gnsh-civicos` to `server.cfg`.
-4. Set the framework/provider choices in [`config/config.lua`](config/config.lua)
-   and [`config/adapters.lua`](config/adapters.lua).
-5. Restart the resource. Database migrations run automatically when
-   `Config.Database.MigrationOnStart` is enabled.
-6. Open the in-game CivicOS panel with `/civicos`. Use **Close** or **Escape**
-   to hide it again; the panel stays hidden when the resource starts.
+4. Configure framework and provider choices in [`config/config.lua`](config/config.lua) and [`config/adapters.lua`](config/adapters.lua).
+5. Restart the resource. Database migrations run automatically when `Config.Database.MigrationOnStart` is enabled.
+6. Open the in-game CivicOS NUI panel with `/civicos` (use **Close** or **Escape** to hide it; the panel starts hidden).
 
-### Operations workspace
+> Keep framework credentials, webhook secrets, and provider tokens in server environment/secret configuration — never commit them to config files.
 
-Staff roles can open a work order from the Operations section to work through
-the server-authorized sequence in one place: update the checklist while on
-scene, start and complete field steps with the issued token, request an
-inspection when the template requires one, and only then move the order to
-completed. The panel displays the current version and actionable server error
-details so a stale or out-of-range action can be corrected without guessing.
+## Server Exports
 
-The framework adapter is selected automatically by default. Set
-`Config.Framework.Provider` explicitly when more than one framework resource is
-present. Inventory, target, notify, and evidence providers have a `none`
-fallback so the core can boot without optional resources.
+Public integration exports require an active invoking FiveM resource (`GetInvokingResource()`) and enforce idempotency keys on mutations (see [`docs/api/API.md`](docs/api/API.md) and [`integrations/`](integrations/README.md)):
 
-## Configuration and integrations
+- `CreateRequest(input, context)` / `GetRequest(id)` / `UpdateRequest(id, expectedVersion, patch, context)` / `ResolveRequest(id, expectedVersion, reason, context)`
+- `CreateWorkOrder(requestId, expectedVersion, serviceCode, overrides, context)` / `GetWorkOrder(id)`
+- `AddComment(requestId, body, context)`
+- `GetHealth()`
 
-- Framework/provider options: [`docs/FRAMEWORKS.md`](docs/FRAMEWORKS.md)
-- API contract and callback operations: [`docs/api/API.md`](docs/api/API.md)
-- Public export examples: [`integrations/examples`](integrations/examples)
-- Configuration values: [`config`](config)
-- Migration history: [`sql`](sql)
-- Security and permission contracts: [`docs/spec`](docs/spec)
-- Retention and archival policy: [`docs/spec/RETENTION_POLICY.md`](docs/spec/RETENTION_POLICY.md)
-- Installation: [`docs/INSTALLATION.md`](docs/INSTALLATION.md)
-- Configuration: [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md)
-- Integrations: [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md)
-- Migrations: [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)
-- Rollback runbook: [`docs/ROLLBACK.md`](docs/ROLLBACK.md)
-- Troubleshooting: [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
-- Release gate: [`docs/RELEASE_GATE.md`](docs/RELEASE_GATE.md)
+## Verification & Checks
 
-Never commit framework credentials, webhook secrets, or provider tokens. Keep
-those values in the server's secret/environment configuration.
+The repository includes Lua 5.4 syntax checks, manifest/locale validators, Node.js unit checks, Lua unit & framework adapter contract specs, and a release-artifact verifier (defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
 
-## Development
+```bash
+find client config server shared -type f -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
+python3 scripts/validate_manifest.py
+python3 scripts/check_locales.py
+node --test tests/unit/*.mjs
+for test in tests/unit/*.lua; do lua5.4 "$test"; done
+for test in tests/integration/framework/*.lua; do lua5.4 "$test"; done
+```
 
-Work on `dev`, keep `main` as the release/default branch, and use conventional
-commit messages (`feat:`, `fix:`, `docs:`, `test:`, `chore:`, and so on). Every
-commit must update [`CHANGELOG.md`](CHANGELOG.md) with the phase or change it
-contains. Run the final test, load, abuse, and migration matrix before merging
-`dev` into `main`.
+Live FXServer load, abuse, and staging scenarios are documented under [`tests/scenarios/`](tests/scenarios) and [`docs/RELEASE_GATE.md`](docs/RELEASE_GATE.md).
 
-The release-candidate CI workflow is available through GitHub Actions
-`workflow_dispatch`; it is intentionally manual until the final verification
-phase so development pushes do not run the deferred test matrix early.
+## Documentation
+
+- [`DESIGN.md`](DESIGN.md) · [`PRODUCT.md`](PRODUCT.md) · [`CHANGELOG.md`](CHANGELOG.md)
+- [`docs/INSTALLATION.md`](docs/INSTALLATION.md) · [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) · [`docs/FRAMEWORKS.md`](docs/FRAMEWORKS.md)
+- [`docs/api/API.md`](docs/api/API.md) · [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md) · [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)
+- [`docs/RELEASE_GATE.md`](docs/RELEASE_GATE.md) · [`docs/ROLLBACK.md`](docs/ROLLBACK.md) · [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
+- [`docs/spec/`](docs/spec) — ADRs, permission matrix, coding rules, performance budget & retention policy
+
+## Branch Workflow
+
+`main` is the default release branch and `dev` is the integration branch (kept in sync with `main` on release). Commit behavior changes with conventional commits (`feat:`, `fix:`, `docs:`, etc.) and update [`CHANGELOG.md`](CHANGELOG.md).
 
 ## License
 
-This repository is maintained as a private CivicOS implementation. Apply the
-deployment and distribution terms agreed by the project owner.
+Licensed under the [MIT License](LICENSE).
